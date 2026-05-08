@@ -5967,6 +5967,12 @@ class SSHNode extends node_1.Node {
         else if (constant_1.OSTypes.DARWIN == sinfo.ssh.ostype) {
             ostype = "darwin";
         }
+        else if (sinfo.ssh.ostype == "debian") {
+            ostype = "debian";
+        }
+        else if (sinfo.ssh.ostype == "ubuntu") {
+            ostype = "ubuntu";
+        }
         if (sinfo.status == constant_1.SSHType.OFFLINE) {
             this.collapsibleState = 0;
             this.iconPath = path.join(serviceManager_1.default.context.extensionPath, 'resources', 'images', `node-${ostype}-offline.svg`);

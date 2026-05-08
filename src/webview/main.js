@@ -240,6 +240,8 @@ const ConnectionPage = defineComponent({
           <el-form-item label="系统" v-if="kind === 'ssh'">
             <el-select v-model="conn.ostype">
               <el-option label="Linux" value="linux" />
+              <el-option label="Ubuntu" value="ubuntu" />
+              <el-option label="Debian" value="debian" />
               <el-option label="Windows" value="Windows_NT" />
               <el-option label="macOS" value="Darwin" />
             </el-select>
