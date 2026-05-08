@@ -1,0 +1,10 @@
+.git/
+.github/
+node_modules/
+out/webview/
+src/
+scripts/
+webpack.config.js
+.vscodeignore
+.gitignore
+*.md
