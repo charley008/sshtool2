@@ -1,0 +1,15 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" class="icon">
+ <defs>
+  <style type="text/css"/>
+ </defs>
+ <g>
+  <title>background</title>
+  <rect fill="none" id="canvas_background" height="1026" width="1026" y="-1" x="-1"/>
+ </g>
+ <g>
+  <title>Layer 1</title>
+  <path id="svg_1" fill="#645A73" d="m48.7619,48.7619m243.80953,0l487.61905,0q243.80952,0 243.80952,243.80953l0,487.61905q0,243.80952 -243.80952,243.80952l-487.61905,0q-243.80953,0 -243.80953,-243.80952l0,-487.61905q-48.7619,-292.57143 243.80953,-243.80953z"/>
+  <path id="svg_2" fill="#9A8AAB" d="m0,0m243.80952,0l487.61905,0q243.80953,0 243.80953,243.80952l0,487.61905q0,243.80953 -243.80953,243.80953l-487.61905,0q-243.80952,0 -243.80952,-243.80953l0,-487.61905q0,-243.80952 243.80952,-243.80952z"/>
+  <text style="cursor: move;" stroke="null" transform="matrix(3.638493299484253,0,0,3.638493299484253,-1026.3738934993744,-778.108164601028) " xml:space="preserve" text-anchor="start" font-family="Helvetica, Arial, sans-serif" font-size="250" id="svg_4" y="443" x="330.274839" stroke-opacity="null" stroke-width="0" fill="#ffffff" font-weight="bold">S</text>
+ </g>
+</svg>

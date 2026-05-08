@@ -1,0 +1,15 @@
+<svg width="1024" height="1024" xmlns="http://www.w3.org/2000/svg" class="icon">
+ <defs>
+  <style type="text/css"/>
+ </defs>
+ <g>
+  <title>background</title>
+  <rect x="-1" y="-1" width="2049.984548" height="2049.984548" id="canvas_background" fill="none"/>
+ </g>
+ <g>
+  <title>Layer 1</title>
+  <path d="m56.260978,56.260978m243.80953,0l487.61905,0q243.80952,0 243.80952,243.80953l0,487.61905q0,243.80952 -243.80952,243.80952l-487.61905,0q-243.80953,0 -243.80953,-243.80952l0,-487.61905q0,-243.80953 243.80953,-243.80953z" fill="#7f7f00" id="svg_1"/>
+  <path d="m0,0m243.80952,0l487.61905,0q243.80953,0 243.80953,243.80952l0,487.61905q0,243.80953 -243.80953,243.80953l-487.61905,0q-243.80952,0 -243.80952,-243.80953l0,-487.61905q0,-243.80952 243.80952,-243.80952z" fill="#bfbf00" id="svg_2"/>
+  <text style="cursor: move;" font-weight="bold" fill="#ffffff" stroke-width="0" stroke-opacity="null" x="330" y="443" id="svg_4" font-size="250" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" transform="matrix(3.638493299484253,0,0,3.638493299484253,-1026.3738934993744,-778.108164601028) " stroke="null">P</text>
+ </g>
+</svg>
