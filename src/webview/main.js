@@ -88,7 +88,7 @@ function defaultConnection(kind) {
       name: "default",
       group: "default",
       status: 1,
-      description: "desc",
+      description: "",
       ftp: { host: "127.0.0.1", port: 21, user: "root", password: "", secure: false },
     };
   }
@@ -97,7 +97,7 @@ function defaultConnection(kind) {
     name: "default",
     group: "default",
     status: 1,
-    description: "desc",
+    description: "",
     ssh: {
       host: "127.0.0.1",
       port: 22,
@@ -285,7 +285,7 @@ function defaultManaged(kind) {
       bastionHost: "",
       bastionPort: 22,
     },
-    description: "desc",
+    description: "",
   };
 }
 
