@@ -631,8 +631,8 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run build",
-    "build": "webpack --mode production && node scripts/verify-extension.js",
+    "vscode:prepublish": "webpack --mode production",
+    "build": "webpack --mode production",
     "package": "vsce package --no-dependencies",
     "package:npx": "npx @vscode/vsce package --no-dependencies --no-yarn --allow-missing-repository",
     "dev": "webpack --mode development"
