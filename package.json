@@ -633,7 +633,7 @@
   "scripts": {
     "vscode:prepublish": "webpack --mode production",
     "build": "webpack --mode production",
-    "package": "vsce package --no-dependencies",
+    "package": "vsce package --no-dependencies --allow-star-activation",
     "package:npx": "npx @vscode/vsce package --no-dependencies --no-yarn --allow-missing-repository",
     "dev": "webpack --mode development"
   },

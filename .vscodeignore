@@ -7,4 +7,6 @@ scripts/
 webpack.config.js
 .vscodeignore
 .gitignore
-*.md
+CHANGELOG.md
+README.md
+MAINTAINER.md
