@@ -1,5 +1,5 @@
 node_modules/
-out/webview/
+out/webview/js/
 *.vsix
 public/theme/auto.css
 public/theme/fonts/
