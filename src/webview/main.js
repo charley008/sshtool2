@@ -9,6 +9,15 @@ import { WebLinksAddon } from "@xterm/addon-web-links";
 import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import "./styles.css";
+import addDarkIcon from "../../resources/images/dark/add.svg";
+import addLightIcon from "../../resources/images/light/add.svg";
+import deleteDarkIcon from "../../resources/images/dark/delete.svg";
+import deleteLightIcon from "../../resources/images/light/delete.svg";
+import editIcon from "../../resources/images/icons/edit.svg";
+import refreshDarkIcon from "../../resources/images/dark/refresh.svg";
+import refreshLightIcon from "../../resources/images/light/refresh.svg";
+import reloadDarkIcon from "../../resources/images/dark/reload.svg";
+import reloadLightIcon from "../../resources/images/light/reload.svg";
 
 const vscode = typeof acquireVsCodeApi !== "undefined" ? acquireVsCodeApi() : null;
 
@@ -81,6 +90,18 @@ function generateId() {
     const r = Math.random() * 16 | 0;
     return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
   });
+}
+
+const iconMap = {
+  add: { dark: addDarkIcon, light: addLightIcon },
+  delete: { dark: deleteDarkIcon, light: deleteLightIcon },
+  edit: { dark: editIcon, light: editIcon },
+  refresh: { dark: refreshDarkIcon, light: refreshLightIcon },
+  reload: { dark: reloadDarkIcon, light: reloadLightIcon },
+};
+
+function themeKind() {
+  return document.body.classList.contains("vscode-light") ? "light" : "dark";
 }
 
 function defaultConnection(kind) {
@@ -226,7 +247,7 @@ const ConnectionPage = defineComponent({
         <span class="muted">{{ titles?.title || titles?.name || '' }}</span>
       </header>
       <section class="panel">
-        <el-form :model="info" label-width="110px" label-position="right">
+        <el-form class="connection-form" :model="info" label-width="110px" label-position="right">
           <el-form-item label="名称"><el-input v-model="info.name" /></el-form-item>
           <el-form-item label="主机"><el-input v-model="conn.host" /></el-form-item>
           <el-form-item label="端口"><el-input-number v-model="conn.port" :min="1" :max="65535" /></el-form-item>
@@ -326,6 +347,24 @@ const ManagerPage = defineComponent({
     onBeforeUnmount(() => disposers.forEach((dispose) => dispose()));
     const editing = ref(false);
     const showForm = ref(false);
+    const theme = ref(themeKind());
+    const themeObserver = new MutationObserver(() => {
+      theme.value = themeKind();
+    });
+    const icons = computed(() => {
+      const kind = theme.value;
+      return {
+        add: iconMap.add[kind],
+        delete: iconMap.delete[kind],
+        edit: iconMap.edit[kind],
+        refresh: iconMap.refresh[kind],
+        reload: iconMap.reload[kind],
+      };
+    });
+    onMounted(() => {
+      themeObserver.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    });
+    onBeforeUnmount(() => themeObserver.disconnect());
     const openForm = (mode) => {
       if (mode === 'new') { Object.keys(draft).forEach(k => delete draft[k]); Object.assign(draft, defaultManaged(props.kind)); bus.emit('new'); }
       editing.value = mode === 'edit';
@@ -344,15 +383,15 @@ const ManagerPage = defineComponent({
       editing.value = true;
       showForm.value = true;
     };
-    return { titles, sshvo, rows, draft, detailKey, emitRow, showForm, editing, closeForm, editRow, openForm };
+    return { titles, sshvo, rows, draft, detailKey, emitRow, showForm, editing, closeForm, editRow, openForm, icons };
   },
   template: `
     <main class="page">
-      <header class="page-header">
+      <header class="page-header manager-header">
         <h1 class="page-title">{{ kind === 'remote' ? '远程桌面' : '端口转发' }}</h1>
       </header>
-      <section class="panel" v-if="!showForm">
-        <el-table :data="rows" empty-text="暂无数据" size="mini">
+      <section class="manager-panel">
+        <el-table class="manager-table" :data="rows" empty-text="暂无数据" size="mini">
           <el-table-column prop="name" label="名称" min-width="100" />
           <template v-if="kind === 'forward'">
             <el-table-column label="本地主机" min-width="100">
@@ -385,69 +424,79 @@ const ManagerPage = defineComponent({
           <el-table-column label="状态" min-width="80">
             <template #default="{ row }"><el-tag size="mini" :type="row.status ? 'success' : 'danger'" effect="dark">{{ row.status ? '运行中' : '已停止' }}</el-tag></template>
           </el-table-column>
-          <el-table-column width="260" fixed="right">
+          <el-table-column width="184" fixed="right" align="right">
             <template #header>
-              <span style="white-space:nowrap">
-                <el-button size="mini" @click="openForm('new')" style="padding:4px 6px;">+ 添加</el-button>
-                <el-button size="mini" @click="emitRow('load')" style="padding:4px 6px;">刷新</el-button>
+              <span class="manager-toolbar in-table">
+                <el-button class="toolbar-button" circle @click="openForm('new')" title="添加"><img :src="icons.add" alt="" /></el-button>
+                <el-button class="toolbar-button primary" circle @click="emitRow('load')" title="刷新"><img :src="icons.refresh" alt="" /></el-button>
               </span>
             </template>
             <template #default="{ row }">
-              <span style="white-space:nowrap">
-                <el-button v-if="!row.status" size="mini" type="success" @click="emitRow('start', row)" style="padding:4px 6px;">启动</el-button>
-                <el-button v-else size="mini" @click="emitRow('stop', row)" style="padding:4px 6px;">停止</el-button>
-                <el-button v-if="!row.status" size="mini" type="primary" @click="editRow(row)" style="padding:4px 6px;">修改</el-button>
-                <el-button size="mini" type="danger" @click="emitRow('remove', row)" style="padding:4px 6px;">删除</el-button>
+              <span class="row-actions">
+                <el-button v-if="!row.status" class="icon-action start" circle size="small" @click="emitRow('start', row)" title="启动"><img :src="icons.reload" alt="" /></el-button>
+                <el-button v-else class="icon-action stop" circle size="small" @click="emitRow('stop', row)" title="停止"><img :src="icons.reload" alt="" /></el-button>
+                <el-button v-if="!row.status" class="icon-action edit" circle size="small" @click="editRow(row)" title="修改"><img class="edit-icon" :src="icons.edit" alt="" /></el-button>
+                <el-button class="icon-action delete" circle size="small" @click="emitRow('remove', row)" title="删除"><img :src="icons.delete" alt="" /></el-button>
               </span>
             </template>
           </el-table-column>
         </el-table>
       </section>
-      <section class="panel" v-if="showForm">
-        <h3 style="margin:0 0 16px">{{ editing ? '修改' : '添加' }}{{ kind === 'remote' ? '远程桌面' : '端口转发' }}</h3>
-        <el-form :model="draft" label-width="120px" label-position="right">
-          <div class="grid">
-            <el-form-item label="名称"><el-input v-model="draft.name" /></el-form-item>
-            <el-form-item label="描述"><el-input v-model="draft.description" /></el-form-item>
-            <el-form-item label="标记"><el-checkbox v-model="draft.mark" /></el-form-item>
+      <el-dialog
+        v-model="showForm"
+        class="manager-dialog"
+        :title="editing ? '修改信息' : '添加信息'"
+        width="40%"
+        top="3vh"
+        :close-on-click-modal="false"
+      >
+        <el-form class="manager-form" :model="draft" label-width="120px" label-position="right" size="small">
+          <div>
+            <el-form-item label="名称" class="is-required"><el-input v-model="draft.name" style="width: 280px; max-width: 100%" /></el-form-item>
             <template v-if="kind === 'forward'">
               <el-form-item label="运行模式">
-                <el-select v-model="draft.forward.mode">
+                <el-select v-model="draft.forward.mode" style="width: 280px; max-width: 100%">
                   <el-option label="内部策略" :value="0" />
                   <el-option label="SSH命令" :value="1" />
                 </el-select>
               </el-form-item>
               <el-form-item label="转发类型">
-                <el-select v-model="draft.forward.type">
+                <el-select v-model="draft.forward.type" style="width: 280px; max-width: 100%">
                   <el-option label="本地转发" :value="0" />
                   <el-option label="远程转发" :value="1" :disabled="draft.forward.mode === 0" />
                   <el-option label="Socks5转发" :value="2" :disabled="draft.forward.mode === 0" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="本地主机"><el-input v-model="draft.forward.localHost" /></el-form-item>
-              <el-form-item label="本地端口"><el-input-number v-model="draft.forward.localPort" :min="1" :max="65535" /></el-form-item>
-              <el-form-item label="目标主机"><el-input v-model="draft.forward.remoteHost" :disabled="draft.forward.type === 2" placeholder="从 SSH 服务器访问的主机，通常为 127.0.0.1" /></el-form-item>
-              <el-form-item label="目标端口"><el-input-number v-model="draft.forward.remotePort" :min="1" :max="65535" :disabled="draft.forward.type === 2" /></el-form-item>
+              <el-form-item label="本地主机"><el-input v-model="draft.forward.localHost" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item label="本地端口"><el-input v-model="draft.forward.localPort" clearable style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item label="目标主机"><el-input v-model="draft.forward.remoteHost" :disabled="draft.forward.type === 2" placeholder="从 SSH 服务器访问的主机，通常为 127.0.0.1" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item label="目标端口"><el-input v-model="draft.forward.remotePort" clearable :disabled="draft.forward.type === 2" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item label="描述"><el-input type="textarea" :rows="3" v-model="draft.description" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item><el-checkbox v-model="draft.mark">Mark</el-checkbox></el-form-item>
             </template>
             <template v-if="kind === 'remote'">
               <el-form-item label="类型">
-                <el-select v-model="draft.mode">
+                <el-select v-model="draft.mode" style="width: 280px; max-width: 100%">
                   <el-option label="RDP" :value="0" />
                   <el-option label="VNC" :value="1" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="端口"><el-input-number v-model="draft.rdp.port" :min="1" :max="65535" /></el-form-item>
+              <el-form-item label="端口"><el-input-number v-model="draft.rdp.port" :min="1" :max="65535" style="width: 280px; max-width: 100%" /></el-form-item>
               <el-form-item label="全屏模式"><el-switch v-model="draft.rdp.isFullScreen" /></el-form-item>
-              <el-form-item label="颜色深度"><el-input-number v-model="draft.rdp.colorDepth" :min="8" :max="32" /></el-form-item>
-              <el-form-item label="分辨率"><el-input v-model="draft.rdp.desktopGeometry" /></el-form-item>
+              <el-form-item label="颜色深度"><el-input-number v-model="draft.rdp.colorDepth" :min="8" :max="32" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item label="分辨率"><el-input v-model="draft.rdp.desktopGeometry" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item label="描述"><el-input type="textarea" :rows="3" v-model="draft.description" style="width: 280px; max-width: 100%" /></el-form-item>
+              <el-form-item><el-checkbox v-model="draft.mark">Mark</el-checkbox></el-form-item>
             </template>
           </div>
-          <div class="actions">
-            <el-button type="primary" @click="emitRow(editing ? 'update' : 'insert')">保存</el-button>
-            <el-button @click="closeForm">取消</el-button>
-          </div>
         </el-form>
-      </section>
+        <template #footer>
+          <div class="dialog-actions">
+            <el-button @click="closeForm">取消</el-button>
+            <el-button type="primary" @click="emitRow(editing ? 'update' : 'insert')">保存</el-button>
+          </div>
+        </template>
+      </el-dialog>
     </main>
   `,
 });

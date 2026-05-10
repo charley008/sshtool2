@@ -56,6 +56,10 @@ const webviewConfig = {
   module: {
     rules: [
       {
+        test: /\.svg$/i,
+        type: "asset/inline",
+      },
+      {
         test: /\.css$/i,
         use: ["style-loader", "css-loader"],
       },

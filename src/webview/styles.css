@@ -37,7 +37,7 @@ body {
   --el-font-size-base: 13px;
 }
 
-/* 输入框 */
+/* 输入�?*/
 .el-input__wrapper,
 .el-textarea__inner {
   background-color: var(--vscode-editor-background, #1e1e1e) !important;
@@ -63,7 +63,7 @@ body {
   color: var(--vscode-input-placeholderForeground, #999) !important;
 }
 
-/* 数字输入框 */
+/* 数字输入�?*/
 .el-input-number {
   --el-input-number-step-button-bg-color: var(--vscode-sideBar-background, #252526);
 }
@@ -75,7 +75,7 @@ body {
   border-color: var(--vscode-button-background, #3c3c3c) !important;
 }
 
-/* 下拉选择框 */
+/* 下拉选择�?*/
 .el-select {
   --el-select-border-color-hover: var(--vscode-input-foreground, #569cd6);
 }
@@ -108,10 +108,23 @@ body {
   color: var(--vscode-descriptionForeground, #9d9d9d) !important;
 }
 
-/* 开关 */
+/* 开�?*/
+.el-switch .el-switch__core {
+  background-color: var(--vscode-input-background, #2d2d30) !important;
+  border-color: var(--vscode-input-border, #3c3c3c) !important;
+}
+
+.el-switch .el-switch__action {
+  background-color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
 .el-switch.is-checked .el-switch__core {
   background-color: var(--vscode-button-background, #0e639c) !important;
   border-color: var(--vscode-button-background, #0e639c) !important;
+}
+
+.el-switch.is-checked .el-switch__action {
+  background-color: #ffffff !important;
 }
 
 /* 表单标签 */
@@ -192,12 +205,12 @@ body {
   color: var(--vscode-foreground, #d4d4d4) !important;
 }
 
-/* 颜色选择器 */
+/* 颜色选择�?*/
 .el-color-picker__trigger {
   border-color: var(--vscode-button-background, #3c3c3c) !important;
 }
 
-/* 滚动条 */
+/* 滚动�?*/
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
@@ -216,7 +229,7 @@ body {
 /* ===== 页面布局 ===== */
 .page {
   min-height: 100%;
-  padding: 16px;
+  padding: 16px 24px;
 }
 
 .page-header {
@@ -249,6 +262,37 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 14px;
+}
+
+.connection-form {
+  width: min(840px, 100%);
+  margin: 0 auto;
+}
+
+.connection-form .el-input,
+.connection-form .el-select,
+.connection-form .el-textarea {
+  width: min(720px, 50vw) !important;
+}
+
+.connection-form .el-input-number {
+  width: 190px !important;
+}
+
+.connection-form .el-input-number .el-input {
+  width: 100% !important;
+}
+
+@media (max-width: 900px) {
+  .connection-form {
+    width: 100%;
+  }
+
+  .connection-form .el-input,
+  .connection-form .el-select,
+  .connection-form .el-textarea {
+    width: 100% !important;
+  }
 }
 
 .json-block {
@@ -286,4 +330,360 @@ body {
   top: 12px;
   right: 12px;
   z-index: 11;
+}
+
+/* ===== SSH Tools manager pages ===== */
+.manager-header {
+  max-width: 1000px;
+  min-height: 40px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 4px;
+}
+
+.manager-header .page-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.manager-panel {
+  max-width: 1000px;
+  min-height: calc(100vh - 86px);
+  margin: 0 auto;
+  padding: 0;
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+.manager-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.manager-toolbar.in-table {
+  justify-content: flex-end;
+  gap: 8px;
+  padding-right: 0;
+}
+
+.manager-toolbar.in-table .el-button + .el-button,
+.row-actions .el-button + .el-button {
+  margin-left: 0;
+}
+
+.toolbar-button.el-button,
+.icon-action.el-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  font-size: 16px;
+  color: #111;
+  background: #a6adb8;
+}
+
+.toolbar-button img,
+.icon-action img {
+  display: block;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+}
+
+.icon-action img.edit-icon {
+  width: 19px;
+  height: 19px;
+  object-fit: contain;
+}
+
+.toolbar-button.el-button.primary,
+.icon-action.el-button.edit {
+  color: #fff;
+  background: var(--vscode-button-background, #3794ff);
+}
+
+.icon-action.el-button.start {
+  color: #111;
+  background: #74d443;
+}
+
+.icon-action.el-button.delete {
+  color: #111;
+  background: #ff6b6b;
+}
+
+.toolbar-button.el-button:hover,
+.icon-action.el-button:hover {
+  filter: brightness(1.08);
+}
+
+.manager-table.el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: transparent;
+  --el-table-row-hover-bg-color: var(--vscode-list-hoverBackground, #2a2d2e);
+  --el-table-border-color: var(--vscode-panel-border, #3c3c3c);
+  font-size: 13px;
+  background: transparent;
+}
+
+.manager-table.el-table::before,
+.manager-table.el-table .el-table__inner-wrapper::before {
+  background-color: var(--vscode-panel-border, #3c3c3c);
+}
+
+.manager-table.el-table th.el-table__cell {
+  height: 44px;
+  background: transparent !important;
+  border-bottom: 1px solid var(--vscode-panel-border, #d4d4d4) !important;
+  color: var(--vscode-descriptionForeground, #b8c0cc);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.manager-table.el-table td.el-table__cell {
+  height: 48px;
+  border-bottom: 1px solid var(--vscode-panel-border, #d4d4d4);
+  color: var(--vscode-foreground, #d4d4d4);
+  font-size: 13px;
+}
+
+.manager-table .el-table__cell {
+  padding: 0;
+}
+
+.manager-table .cell {
+  line-height: 20px;
+}
+
+.manager-table .el-table__fixed-right .cell,
+.manager-table .el-table__fixed-right-patch .cell {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.manager-table .el-tag {
+  min-width: 64px;
+  height: 22px;
+  border: 0;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.row-actions {
+  display: inline-flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.manager-dialog.el-dialog {
+  --el-dialog-bg-color: var(--vscode-editor-background, #1e1e1e);
+  --el-dialog-padding-primary: 24px;
+  --manager-control-border: #007acc;
+  --el-color-primary: var(--manager-control-border);
+  --el-border-color: var(--manager-control-border);
+  --el-border-color-hover: var(--manager-control-border);
+  --el-input-border-color: var(--manager-control-border);
+  --el-input-hover-border-color: var(--manager-control-border);
+  --el-input-focus-border-color: var(--manager-control-border);
+  --el-select-input-focus-border-color: var(--manager-control-border);
+  width: min(980px, max(520px, 40vw), calc(100vw - 48px)) !important;
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  border-radius: 2px;
+  color: var(--vscode-foreground, #d4d4d4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .45);
+}
+
+.manager-dialog .el-dialog__header {
+  margin: 0;
+  padding-bottom: 20px;
+}
+
+.manager-dialog .el-dialog__title {
+  font-size: 20px;
+  color: var(--vscode-foreground, #d4d4d4);
+}
+
+.manager-dialog .el-dialog__body {
+  overflow: auto;
+  padding-top: 8px;
+  padding-bottom: 14px;
+}
+
+.manager-form {
+  width: min(300px, 100%);
+  margin: 0 auto;
+  transform: translateX(-56px);
+}
+
+.manager-form .el-form-item {
+  margin-bottom: 14px;
+}
+
+.manager-form .el-form-item__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+.manager-form .el-input,
+.manager-form .el-textarea,
+.manager-form .el-select,
+.manager-form .el-input-number {
+  --el-input-border-color: var(--manager-control-border);
+  --el-input-hover-border-color: var(--manager-control-border);
+  --el-input-focus-border-color: var(--manager-control-border);
+  --el-select-input-focus-border-color: var(--manager-control-border);
+  --el-select-border-color-hover: var(--manager-control-border);
+  --el-border-color: var(--manager-control-border);
+  --el-border-color-light: var(--manager-control-border);
+  --el-input-number-step-button-bg-color: var(--vscode-input-background, var(--vscode-editor-background, #1e1e1e));
+}
+
+.manager-form .el-input {
+  width: min(280px, 100%) !important;
+}
+
+.manager-form .el-textarea {
+  width: min(280px, 100%) !important;
+}
+
+.manager-form .el-select {
+  width: min(280px, 100%) !important;
+  --el-select-input-focus-border-color: var(--manager-control-border);
+  --el-select-border-color-hover: var(--manager-control-border);
+  --el-color-success: var(--manager-control-border);
+}
+
+.manager-form .el-input-number {
+  width: 280px !important;
+}
+
+.manager-form .el-input-number .el-input {
+  width: 100% !important;
+}
+
+.manager-form .el-input__wrapper {
+  background: var(--vscode-input-background, var(--vscode-editor-background, #1e1e1e)) !important;
+  box-shadow: 0 0 0 1px var(--manager-control-border) inset !important;
+}
+
+.manager-form .el-textarea__inner {
+  min-height: 80px;
+  background: var(--vscode-input-background, var(--vscode-editor-background, #1e1e1e)) !important;
+  box-shadow: 0 0 0 1px var(--manager-control-border) inset !important;
+}
+
+.manager-form .el-input-number .el-input__wrapper {
+  padding-left: 31px;
+  padding-right: 31px;
+}
+
+.manager-form .el-input-number .el-input__inner {
+  text-align: center;
+}
+
+.manager-form .el-input-number__decrease,
+.manager-form .el-input-number__increase {
+  background-color: var(--vscode-input-background, var(--vscode-editor-background, #1e1e1e)) !important;
+  border-color: var(--manager-control-border) !important;
+}
+
+.manager-form .el-input-number__decrease {
+  left: 1px;
+  border-right: 1px solid var(--manager-control-border) !important;
+}
+
+.manager-form .el-input-number__increase {
+  right: 1px;
+  border-left: 1px solid var(--manager-control-border) !important;
+}
+
+.manager-dialog .manager-form .el-select .el-input__wrapper,
+.manager-dialog .manager-form .el-form-item.is-success .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--manager-control-border) inset !important;
+}
+
+.manager-dialog .manager-form .el-select:hover .el-input__wrapper,
+.manager-dialog .manager-form .el-select .el-input.is-focus .el-input__wrapper,
+.manager-dialog .manager-form .el-select .el-input__wrapper.is-focus,
+.manager-dialog .manager-form .el-form-item.is-success .el-input__wrapper:hover,
+.manager-dialog .manager-form .el-form-item.is-success .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--manager-control-border) inset !important;
+}
+
+.manager-dialog .manager-form .el-select .el-input__wrapper,
+.manager-dialog .manager-form .el-select .el-input__wrapper:hover,
+.manager-dialog .manager-form .el-select .el-input__wrapper.is-focus {
+  border-color: var(--manager-control-border) !important;
+}
+
+.manager-form .el-input__wrapper:hover,
+.manager-form .el-input__wrapper.is-focus,
+.manager-form .el-textarea__inner:hover,
+.manager-form .el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--manager-control-border) inset !important;
+}
+
+.manager-form .el-checkbox__inner {
+  border-color: var(--manager-control-border) !important;
+  background: transparent !important;
+}
+
+.manager-form .el-checkbox__input.is-checked .el-checkbox__inner {
+  border-color: var(--manager-control-border) !important;
+  background: var(--manager-control-border) !important;
+}
+
+.manager-form .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label::before {
+  color: #f56c6c;
+  margin-right: 4px;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.dialog-actions .el-button {
+  min-width: 82px;
+}
+
+.manager-dialog .dialog-actions .el-button--primary {
+  --el-button-bg-color: #409eff;
+  --el-button-border-color: #409eff;
+  --el-button-hover-bg-color: #66b1ff;
+  --el-button-hover-border-color: #66b1ff;
+  color: #111 !important;
+}
+
+.manager-dialog .dialog-actions .el-button--default {
+  --el-button-border-color: var(--manager-control-border);
+  --el-button-hover-border-color: var(--manager-control-border);
+}
+
+@media (max-width: 720px) {
+  .manager-dialog.el-dialog {
+    --el-dialog-padding-primary: 18px;
+  }
+
+  .manager-form {
+    width: 100%;
+    transform: none;
+  }
+
+  .manager-form .el-form-item {
+    margin-bottom: 14px;
+  }
+
+  .manager-form .el-form-item__label {
+    font-size: 14px;
+  }
 }
