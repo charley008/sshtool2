@@ -1,0 +1,11 @@
+.npm-cache/**
+.github/**
+node_modules/**
+src/**
+docs/**
+public/**
+webpack.config.js
+jsconfig.json
+*.log
+*.vsix
+.gitignore

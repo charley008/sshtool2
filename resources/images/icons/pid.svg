@@ -1,0 +1,11 @@
+<svg width="24" height="24" xmlns="http://www.w3.org/2000/svg">
+ <g>
+  <title>background</title>
+  <rect x="-1" y="-1" width="3.334074" height="3.334074" id="canvas_background" fill="none"/>
+ </g>
+
+ <g>
+  <title>Layer 1</title>
+  <text fill="#7B572D" stroke="null" stroke-width="0" stroke-opacity="null" x="1.166255" y="20" id="svg_3" font-size="13" font-family="Helvetica, Arial, sans-serif" text-anchor="start" xml:space="preserve" font-weight="bold">PID</text>
+ </g>
+</svg>

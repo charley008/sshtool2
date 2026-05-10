@@ -1,0 +1,289 @@
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--vscode-foreground, #d4d4d4);
+  background: var(--vscode-editor-background, #1e1e1e);
+  font-family: var(--vscode-font-family, "Segoe UI", sans-serif);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* ===== Element Plus 暗色主题覆盖 ===== */
+:root {
+  --el-bg-color: var(--vscode-editor-background, #1e1e1e);
+  --el-bg-color-overlay: var(--vscode-editorSuggestWidget-background, #252526);
+  --el-bg-color-page: var(--vscode-editor-background, #1e1e1e);
+  --el-text-color-primary: var(--vscode-foreground, #d4d4d4);
+  --el-text-color-regular: var(--vscode-foreground, #d4d4d4);
+  --el-text-color-secondary: var(--vscode-descriptionForeground, #9d9d9d);
+  --el-text-color-placeholder: var(--vscode-input-placeholderForeground, #999);
+  --el-border-color: var(--vscode-button-background, #3c3c3c);
+  --el-border-color-light: var(--vscode-button-background, #3c3c3c);
+  --el-border-color-lighter: var(--vscode-button-background, #3c3c3c);
+  --el-fill-color-blank: var(--vscode-editor-background, #1e1e1e);
+  --el-fill-color-light: var(--vscode-editorSuggestWidget-background, #252526);
+  --el-fill-color-lighter: var(--vscode-sideBar-background, #252526);
+  --el-color-primary: var(--vscode-button-background, #0e639c);
+  --el-color-danger: #f48771;
+  --el-color-info: #8a8a8a;
+  --el-border-radius-base: 4px;
+  --el-font-size-base: 13px;
+}
+
+/* 输入框 */
+.el-input__wrapper,
+.el-textarea__inner {
+  background-color: var(--vscode-editor-background, #1e1e1e) !important;
+  box-shadow: 0 0 0 1px var(--vscode-button-background, #3c3c3c) inset !important;
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+.el-input__wrapper:hover,
+.el-textarea__inner:hover {
+  box-shadow: 0 0 0 1px var(--vscode-input-foreground, #569cd6) inset !important;
+}
+
+.el-input__wrapper.is-focus,
+.el-textarea__inner:focus {
+  box-shadow: 0 0 0 1px var(--vscode-input-foreground, #569cd6) inset !important;
+}
+
+.el-input__inner {
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+.el-input__inner::placeholder {
+  color: var(--vscode-input-placeholderForeground, #999) !important;
+}
+
+/* 数字输入框 */
+.el-input-number {
+  --el-input-number-step-button-bg-color: var(--vscode-sideBar-background, #252526);
+}
+
+.el-input-number__decrease,
+.el-input-number__increase {
+  background-color: var(--vscode-sideBar-background, #252526) !important;
+  color: var(--vscode-foreground, #d4d4d4) !important;
+  border-color: var(--vscode-button-background, #3c3c3c) !important;
+}
+
+/* 下拉选择框 */
+.el-select {
+  --el-select-border-color-hover: var(--vscode-input-foreground, #569cd6);
+}
+
+.el-select .el-input__wrapper {
+  background-color: var(--vscode-editor-background, #1e1e1e) !important;
+}
+
+.el-select-dropdown {
+  background-color: var(--vscode-editorSuggestWidget-background, #252526) !important;
+  border-color: var(--vscode-button-background, #3c3c3c) !important;
+}
+
+.el-select-dropdown__item {
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+.el-select-dropdown__item.hover,
+.el-select-dropdown__item:hover {
+  background-color: var(--vscode-tab-hoverBackground, #2a2d2e) !important;
+}
+
+.el-select-dropdown__item.is-selected {
+  color: var(--vscode-button-background, #569cd6) !important;
+  font-weight: normal;
+}
+
+/* 下拉箭头 */
+.el-select__caret {
+  color: var(--vscode-descriptionForeground, #9d9d9d) !important;
+}
+
+/* 开关 */
+.el-switch.is-checked .el-switch__core {
+  background-color: var(--vscode-button-background, #0e639c) !important;
+  border-color: var(--vscode-button-background, #0e639c) !important;
+}
+
+/* 表单标签 */
+.el-form-item__label {
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+/* 按钮 */
+.el-button--primary {
+  --el-button-bg-color: var(--vscode-button-background, #0e639c);
+  --el-button-border-color: var(--vscode-button-background, #0e639c);
+  --el-button-hover-bg-color: var(--vscode-button-hoverBackground, #1177bb);
+  --el-button-hover-border-color: var(--vscode-button-hoverBackground, #1177bb);
+  color: var(--vscode-button-foreground, #fff) !important;
+}
+
+.el-button--default {
+  --el-button-bg-color: var(--vscode-editor-background, #1e1e1e);
+  --el-button-border-color: var(--vscode-button-background, #3c3c3c);
+  --el-button-text-color: var(--vscode-foreground, #d4d4d4);
+  --el-button-hover-bg-color: var(--vscode-sideBar-background, #252526);
+  --el-button-hover-border-color: var(--vscode-input-foreground, #569cd6);
+  --el-button-hover-text-color: var(--vscode-foreground, #d4d4d4);
+}
+
+/* 表格 */
+.el-table {
+  --el-table-bg-color: var(--vscode-editor-background, #1e1e1e);
+  --el-table-tr-bg-color: var(--vscode-editor-background, #1e1e1e);
+  --el-table-header-bg-color: var(--vscode-sideBar-background, #252526);
+  --el-table-row-hover-bg-color: var(--vscode-tab-hoverBackground, #2a2d2e);
+  --el-table-text-color: var(--vscode-foreground, #d4d4d4);
+  --el-table-header-text-color: var(--vscode-foreground, #d4d4d4);
+  --el-table-border-color: var(--vscode-button-background, #3c3c3c);
+  --el-table-current-row-bg-color: var(--vscode-tab-hoverBackground, #2a2d2e);
+  background-color: var(--vscode-editor-background, #1e1e1e);
+  color: var(--vscode-foreground, #d4d4d4);
+}
+
+.el-table th.el-table__cell {
+  background-color: var(--vscode-sideBar-background, #252526) !important;
+}
+
+/* 标签 */
+.el-tag {
+  border-color: var(--vscode-button-background, #3c3c3c);
+}
+
+/* 卡片 */
+.el-card {
+  background-color: var(--vscode-editorSuggestWidget-background, #252526);
+  border-color: var(--vscode-button-background, #3c3c3c);
+  color: var(--vscode-foreground, #d4d4d4);
+}
+
+/* 消息提示 */
+.el-message {
+  --el-message-bg-color: var(--vscode-editorSuggestWidget-background, #252526);
+  border-color: var(--vscode-button-background, #3c3c3c);
+}
+
+/* 下拉菜单 */
+.el-dropdown-menu {
+  background-color: var(--vscode-editorSuggestWidget-background, #252526) !important;
+  border-color: var(--vscode-button-background, #3c3c3c) !important;
+}
+
+.el-dropdown-menu__item {
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+.el-dropdown-menu__item:hover {
+  background-color: var(--vscode-tab-hoverBackground, #2a2d2e) !important;
+}
+
+/* 复选框 */
+.el-checkbox__label {
+  color: var(--vscode-foreground, #d4d4d4) !important;
+}
+
+/* 颜色选择器 */
+.el-color-picker__trigger {
+  border-color: var(--vscode-button-background, #3c3c3c) !important;
+}
+
+/* 滚动条 */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: var(--vscode-scrollbarSlider-background, #424242);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--vscode-scrollbarSlider-hoverBackground, #4f4f4f);
+}
+
+/* ===== 页面布局 ===== */
+.page {
+  min-height: 100%;
+  padding: 16px;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.muted {
+  color: var(--vscode-descriptionForeground, #9d9d9d);
+}
+
+.panel {
+  border: 1px solid var(--vscode-panel-border, #3c3c3c);
+  border-radius: 6px;
+  padding: 14px;
+  background: var(--vscode-sideBar-background, #252526);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.json-block {
+  max-height: 260px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  color: var(--vscode-editor-foreground, #d4d4d4);
+  background: var(--vscode-textCodeBlock-background, #1b1b1b);
+}
+
+.terminal-page {
+  position: relative;
+  height: 100%;
+  min-height: 100vh;
+  background: var(--vscode-editor-background, #1e1e1e);
+}
+
+.terminal {
+  height: 100vh;
+  padding: 8px;
+}
+
+.terminal-settings {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: min(360px, calc(100vw - 24px));
+  z-index: 10;
+}
+
+.settings-toggle {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 11;
+}
