@@ -11,9 +11,18 @@ const extensionConfig = {
     libraryTarget: "commonjs2",
     clean: true,
   },
-  externals: {
-    vscode: "commonjs vscode",
-  },
+  externals: [
+    {
+      vscode: "commonjs vscode",
+      "cpu-features": "commonjs cpu-features",
+    },
+    ({ request }, callback) => {
+      if (/\.node$/.test(request)) {
+        return callback(null, `commonjs ${request}`);
+      }
+      callback();
+    },
+  ],
   resolve: {
     extensions: [".js", ".json"],
     alias: {
