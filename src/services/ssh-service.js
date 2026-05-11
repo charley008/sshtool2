@@ -127,7 +127,7 @@ class SSHService {
                     try {
                         sshi = this.parsPrivates2PrivateKey(sshi);
                     } catch(e) {
-                        // ignore parse error
+                        Console.debug(`Private key parse failed: ${e && e.message ? e.message : e}`);
                     }
                     SSHConn.get(sshi, false).then(() => {
                         handler.emit('CONNECTION_TEST_OK', { titles: tis, msg: '连接测试成功' });

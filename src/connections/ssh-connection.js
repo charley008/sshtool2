@@ -34,31 +34,24 @@ class SSHConn {
             if (sshInfo.status == 0) {
                 return Promise.resolve(this.activeConn[key]);
             }
+            this.closeSSH(sshInfo, forwardOption);
         }
         // config.ssh = API.config_filter(config.ssh);  
         const client = new Client();
         return new Promise((resolve, reject) => {
-            client.on('ready', () => {
-                if (withSftp) {
-                    client.sftp((err, sftp) => {
-                        if (err) {
-                            this.closeSSH(sshInfo, forwardOption);
-                            reject(err);
-                            return;
-                        }
-                        this.activeConn[key] = { client, sftp };
-                        resolve(this.activeConn[key]);
-                    });
+            let settled = false;
+            const finishResolve = (value) => {
+                if (settled) {
+                    return;
                 }
-                else if (forwardOption) {
-                    this.activeConn[key] = { client, sftp: null };
-                    resolve(this.activeConn[key]);
+                settled = true;
+                resolve(value);
+            };
+            const finishReject = (err) => {
+                if (settled) {
+                    return;
                 }
-                else {
-                    resolve({ client, sftp: null });
-                }
-            }).on('error', (err) => {
-                // Console.err({message:`${SSHVO.title(sshInfo)},${err.message}`});
+                settled = true;
                 if (forwardOption) {
                     this.closeSSH(sshInfo, forwardOption);
                 }
@@ -66,6 +59,28 @@ class SSHConn {
                     this.closeSSH(sshInfo);
                 }
                 reject(err);
+            };
+            client.on('ready', () => {
+                if (withSftp) {
+                    client.sftp((err, sftp) => {
+                        if (err) {
+                            finishReject(err);
+                            return;
+                        }
+                        this.activeConn[key] = { client, sftp };
+                        finishResolve(this.activeConn[key]);
+                    });
+                }
+                else if (forwardOption) {
+                    this.activeConn[key] = { client, sftp: null };
+                    finishResolve(this.activeConn[key]);
+                }
+                else {
+                    finishResolve({ client, sftp: null });
+                }
+            }).on('error', (err) => {
+                // Console.err({message:`${SSHVO.title(sshInfo)},${err.message}`});
+                finishReject(err);
                 // resolve(null)
             }).on('end', () => {
                 if (this.activeConn[key]) {
@@ -84,7 +99,6 @@ class SSHConn {
             return Promise.resolve(this.activeConn[key]);
         }
         return Promise.resolve({ client: null, sftp: null });
-        ;
     }
     static closeSSH(sshInfo, forwardOption = null) {
         let key = sshInfo.id;

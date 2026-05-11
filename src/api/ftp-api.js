@@ -457,9 +457,9 @@ class FTPAPI {
             if (uri) {
                 const url_size = uri.length;
                 let curr_url_index = 0;
-                for (let key in uri) {
+                for (const item of uri) {
                     curr_url_index += 1;
-                    const targetPath = uri[key].fsPath;
+                    const targetPath = item.fsPath;
                     yield vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
                         title: (0, Localize)("xplot.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),

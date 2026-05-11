@@ -145,27 +145,6 @@ class API {
         Storage.update_status_keys(keys);
         Console.debug("api.ts func console_output_switch end");
     }
-    //自动检查本地缓存文件是否过期
-    static autoVerifyTempFileRemotes() {
-        return __awaiter(this, void 0, void 0, function* () {
-            Console.debug("api.ts func autoVerifyTempFileRemotes begin");
-            const tempFileRemotes = Storage.get_temp_file_remotes();
-            const timestamp = new Date().getTime();
-            const oneDayLong = 24 * 3600 * 1000; //定义3天毫秒
-            for (let i in tempFileRemotes) { //连接时间大于三天将删除
-                let state = false;
-                if (timestamp - tempFileRemotes[i]['timeStamp'] < oneDayLong) {
-                    state = true;
-                }
-                if (!state) {
-                    delete tempFileRemotes[i];
-                    Storage.update_temp_file_remotes(tempFileRemotes);
-                }
-            }
-            Console.debug("api.ts func autoVerifyTempFileRemotes end");
-        });
-    }
-    //升级老版本配置文件到最新v1
     static autoVerifyTempFileRemotes() {
         return __awaiter(this, void 0, void 0, function* () {
             Console.debug("api.ts func autoVerifyTempFileRemotes begin");

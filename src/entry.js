@@ -146,34 +146,13 @@ function activate(context) {
     }
     context.subscriptions.push(...disposables);
 
-    // 捕获未处理的 Promise rejection，避免 VS Code 弹出"出现未知错误"对话框
-    const rejectionHandler = (reason, promise) => {
-        if (reason && reason.message) {
-            const msg = reason.message;
-            // SSH/FTP 连接相关的可预期错误，静默处理
-            if (msg.includes('Login incorrect') ||
-                msg.includes('connect ETIMEDOUT') ||
-                msg.includes('connect ECONNREFUSED') ||
-                msg.includes('Connection lost') ||
-                msg.includes('No response from server') ||
-                msg.includes('Timed out while waiting for handshake') ||
-                msg.includes('All configured authentication methods failed')) {
-                console.warn('[SSH Tools] Connection error (expected):', msg);
-                return;
-            }
-        }
-        console.error('[SSH Tools] Unexpected unhandled rejection:', reason);
-    };
-    process.on('unhandledRejection', rejectionHandler);
-    context.subscriptions.push({ dispose: () => process.off('unhandledRejection', rejectionHandler) });
-
     console.log('[SSH Tools] Registered ' + ok + ' commands (' + fail + ' failed). Activated.');
 }
 
 function deactivate() {
     console.log('[SSH Tools] Deactivating');
     if (serviceManager) {
-        try { serviceManager.cleanup(); } catch (e) {}
+        try { serviceManager.cleanup(); } catch (e) { console.error('[SSH Tools] Cleanup failed:', e); }
     }
 }
 

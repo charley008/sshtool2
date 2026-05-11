@@ -26,20 +26,36 @@ class FTPConn {
             pasvTimeout: 10 * 1000
         };
         if (this.activeFTPConn[key]) {
-            // if(ftpInfo.status == 0){
-            return Promise.resolve(this.activeFTPConn[key]);
-            // }
+            if (ftpInfo.status == 0) {
+                return Promise.resolve(this.activeFTPConn[key]);
+            }
+            this.closeFTP(ftpInfo);
         }
         // config.ftp = API.config_filter(config.ftp);  
         const client = new Client();
         return new Promise((resolve, reject) => {
-            client.on('ready', () => {
-                this.activeFTPConn[key] = { client };
-                resolve(this.activeFTPConn[key]);
-            }).on('error', (err) => {
-                // Console.err({message:`${FTPVO.title(ftpInfo)},${err.message}`});
+            let settled = false;
+            const finishResolve = (value) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                resolve(value);
+            };
+            const finishReject = (err) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
                 this.closeFTP(ftpInfo);
                 reject(err);
+            };
+            client.on('ready', () => {
+                this.activeFTPConn[key] = { client };
+                finishResolve(this.activeFTPConn[key]);
+            }).on('error', (err) => {
+                // Console.err({message:`${FTPVO.title(ftpInfo)},${err.message}`});
+                finishReject(err);
                 // resolve(null)
             }).on('end', () => {
                 if (this.activeFTPConn[key]) {

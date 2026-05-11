@@ -62,7 +62,7 @@ class SSHDT extends BaseDT {
     static insert_ssh(ssh) {
         this.Init();
         if (!ssh.id || ssh.id === 'undefined') {
-            ssh.id = require('crypto').randomUUID ? require('crypto').randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+            ssh.id = (require('crypto').randomUUID ? require('crypto').randomUUID() : require('crypto').randomBytes(16).toString('hex'));
         }
         if (!ssh.name && ssh.ssh) {
             ssh.name = `${ssh.ssh.username || 'root'}@${ssh.ssh.host || 'unknown'}`;

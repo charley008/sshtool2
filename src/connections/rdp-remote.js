@@ -77,7 +77,6 @@ class RDP {
                     const xfreerdpArgs = [
                         '/v:' + sshInfo.ssh.host + ':' + remote.rdp.port,
                         '/u:' + (sshInfo.ssh.username || ''),
-                        '/p:' + sshInfo.ssh.password,
                     ];
                     if (remote.rdp.isFullScreen) xfreerdpArgs.push('-f');
                     if (remote.rdp.colorDepth) xfreerdpArgs.push('/bpp:' + remote.rdp.colorDepth);
@@ -87,8 +86,9 @@ class RDP {
                         '+fonts', '+window-drag', '+drives', '+menu-anims', '+aero', '+glyph-cache', '+clipboard',
                         '/network:auto', '/gdi:hw', '/audio-mode:0', '/sound'
                     );
-                    // TODO: 安全风险 — xfreerdp 密码通过命令行参数传递，进程列表中可见
-                    child_process = (0, child_process_1.execFile)('xfreerdp', xfreerdpArgs);
+                    xfreerdpArgs.push('/from-stdin');
+                    child_process = (0, child_process_1.spawn)('xfreerdp', xfreerdpArgs, { stdio: ['pipe', 'ignore', 'ignore'] });
+                    child_process.stdin.end(sshInfo.ssh.password + '\n');
                 }
                 else {
                     Console.warn("The host password parameter does not exist");

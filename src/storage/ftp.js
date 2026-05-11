@@ -57,7 +57,7 @@ class FTPDT extends BaseDT {
     static insert_ftp(ftp) {
         this.Init();
         if (!ftp.id || ftp.id === 'undefined') {
-            ftp.id = require('crypto').randomUUID ? require('crypto').randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2);
+            ftp.id = (require('crypto').randomUUID ? require('crypto').randomUUID() : require('crypto').randomBytes(16).toString('hex'));
         }
         if (!ftp.name && ftp.ftp) {
             ftp.name = `${ftp.ftp.user || 'anonymous'}@${ftp.ftp.host || 'unknown'}`;
