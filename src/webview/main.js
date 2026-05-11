@@ -130,6 +130,7 @@ function defaultConnection(kind) {
       privates: "",
       privateKey: "",
       passphrase: "",
+      jump: { enabled: false, sshId: "" },
     },
   };
 }
@@ -186,6 +187,7 @@ const ConnectionPage = defineComponent({
     const mode = ref("add");
     const titles = ref({});
     const groups = ref([]);
+    const jumpHosts = ref([]);
     const info = reactive(defaultConnection(props.kind));
     const conn = computed(() => (props.kind === "ftp" ? info.ftp : info.ssh));
     const testResult = ref(null);
@@ -201,6 +203,10 @@ const ConnectionPage = defineComponent({
       if (incoming?.[key]) {
         Object.assign(info[key], incoming[key]);
       }
+      if (props.kind === "ssh") {
+        info.ssh = Object.assign(defaultConnection("ssh").ssh, info.ssh || {});
+        info.ssh.jump = Object.assign({ enabled: false, sshId: "" }, info.ssh.jump || {});
+      }
     };
     watch(() => props.kind, (newKind) => {
       const defaults = defaultConnection(newKind);
@@ -212,12 +218,14 @@ const ConnectionPage = defineComponent({
         mode.value = "add";
         titles.value = payload?.titles || {};
         groups.value = objectValues(payload?.groups);
+        jumpHosts.value = payload?.jumpHosts || [];
         applyIncoming(payload);
       }),
       bus.on("edit", (payload) => {
         mode.value = "edit";
         titles.value = payload?.titles || {};
         groups.value = objectValues(payload?.groups);
+        jumpHosts.value = payload?.jumpHosts || [];
         applyIncoming(payload);
       }),
       bus.on("CONNECTION_ERROR", (payload) => {
@@ -238,7 +246,7 @@ const ConnectionPage = defineComponent({
       const label = mode.value === 'edit' ? '修改' : '添加';
       return `${props.kind.toUpperCase()} ${label}`;
     });
-    return { mode, titles, groups, info, conn, testResult, submit, props, groupName, pageTitle };
+    return { mode, titles, groups, jumpHosts, info, conn, testResult, submit, props, groupName, pageTitle };
   },
   template: `
     <main class="page">
@@ -267,6 +275,14 @@ const ConnectionPage = defineComponent({
               <el-option label="Debian" value="debian" />
               <el-option label="Windows" value="Windows_NT" />
               <el-option label="macOS" value="Darwin" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="跳板机" v-if="kind === 'ssh'">
+            <el-switch v-model="conn.jump.enabled" active-text="启用" inactive-text="关闭" />
+          </el-form-item>
+          <el-form-item label="跳板连接" v-if="kind === 'ssh' && conn.jump.enabled">
+            <el-select v-model="conn.jump.sshId" placeholder="选择已有 SSH 连接" filterable clearable>
+              <el-option v-for="item in jumpHosts" :key="item.id" :label="item.label" :value="item.id" />
             </el-select>
           </el-form-item>
           <el-form-item label="私钥" v-if="kind === 'ssh'"><el-input v-model="conn.privates" type="textarea" :rows="4" /></el-form-item>

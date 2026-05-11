@@ -37,7 +37,7 @@ class SSHInfo {
     //     return this.sshDao.deleteById(this.id);
     // }
     static New() {
-        return new SSHInfo("default", "default", constant_1.SSHType.OFFLINE, new SSH('127.0.0.1', 22, 'root', constant_1.OSTypes.LINUX, null, null, null, null), "");
+        return new SSHInfo("default", "default", constant_1.SSHType.OFFLINE, new SSH('127.0.0.1', 22, 'root', constant_1.OSTypes.LINUX, null, null, null, null, { enabled: false, sshId: "" }), "");
     }
 }
 exports.SSHInfo = SSHInfo;

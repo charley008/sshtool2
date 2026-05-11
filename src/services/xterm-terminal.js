@@ -22,6 +22,14 @@ const constant_1 = require("../shared/constants.js");
 const { Console } = require("../ui/console.js");
 const { Storage } = require("../storage/storage.js");
 const { SSHVO } = require("../models/ssh-model.js");
+const { SSHConn } = require("../connections/ssh-connection.js");
+
+function cloneTerminalConnectOptions(sshinfo, option) {
+    const ssh = Object.assign({}, sshinfo.ssh || {});
+    delete ssh.jump;
+    return Object.assign(ssh, option || {});
+}
+
 class XtermTerminal {
     // private getSshUrl(sshinfo: SSHInfo): string {
     //     return 'ssh://' + sshinfo.id;
@@ -145,7 +153,11 @@ class XtermTerminal {
             client.on('keyboard-interactive', () => {
                 end();
             });
-            client.connect(sshinfo.ssh);
+            SSHConn.openJumpStream(sshinfo, {}).then(({ option }) => {
+                client.connect(cloneTerminalConnectOptions(sshinfo, option));
+            }).catch((err) => {
+                sshlog(false, 'CONN ERROR', err);
+            });
         }).on('openLog', () => __awaiter(this, void 0, void 0, function* () {
             const keyDir = `${sshinfo.ssh.username}@${sshinfo.ssh.host}#${sshinfo.ssh.port}`;
             yield fileManager_1.FileManager.record(`logs/${keyDir}`, dataBuffer.toString().replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''), fileManager_1.FileModel.WRITE);

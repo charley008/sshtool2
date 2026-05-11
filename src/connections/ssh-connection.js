@@ -15,10 +15,51 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const { Client } = require("./ssh2-runtime.js");
 const { Console } = require("../ui/console.js");
 const { SSHVO } = require("../models/ssh-model.js");
+
+function normalizeJump(sshInfo) {
+    const jump = sshInfo && sshInfo.ssh ? sshInfo.ssh.jump : null;
+    return Object.assign({ enabled: false, sshId: "" }, jump || {});
+}
+
+function cloneConnectOptions(sshInfo, option) {
+    const ssh = Object.assign({}, sshInfo.ssh || {});
+    delete ssh.jump;
+    return Object.assign(ssh, option);
+}
+
 class SSH {
 }
 exports.SSH = SSH;
 class SSHConn {
+    static openJumpStream(sshInfo, option) {
+        const jump = normalizeJump(sshInfo);
+        if (!jump.enabled) {
+            return Promise.resolve({ option, jumpKey: null });
+        }
+        if (!jump.sshId || jump.sshId === sshInfo.id) {
+            return Promise.reject(new Error("Invalid jump host selection."));
+        }
+        const jumpVO = SSHVO.get(jump.sshId);
+        const jumpInfo = jumpVO && jumpVO.ssh;
+        if (!jumpInfo) {
+            return Promise.reject(new Error("Jump host was not found."));
+        }
+        const nestedJump = normalizeJump(jumpInfo);
+        if (nestedJump.enabled) {
+            return Promise.reject(new Error("Nested jump hosts are not supported."));
+        }
+        return this.get(jumpInfo, false).then(({ client }) => {
+            return new Promise((resolve, reject) => {
+                client.forwardOut("127.0.0.1", 0, sshInfo.ssh.host, Number(sshInfo.ssh.port || 22), (err, stream) => {
+                    if (err) {
+                        reject(err);
+                        return;
+                    }
+                    resolve({ option: Object.assign({}, option, { sock: stream }), jumpKey: jump.sshId });
+                });
+            });
+        });
+    }
     static get(sshInfo, withSftp = true, forwardOption = null) {
         let key = sshInfo.id;
         let option = {
@@ -87,7 +128,11 @@ class SSHConn {
                     this.activeConn[key].client.destroy();
                     delete this.activeConn[key];
                 }
-            }).connect(Object.assign(Object.assign({}, sshInfo.ssh), option));
+            });
+            const connectOptions = forwardOption ? Promise.resolve({ option, jumpKey: null }) : this.openJumpStream(sshInfo, option);
+            connectOptions.then(({ option: effectiveOption }) => {
+                client.connect(cloneConnectOptions(sshInfo, effectiveOption));
+            }).catch(finishReject);
         });
     }
     static verifySSH(sshInfo, forwardOption = null) {

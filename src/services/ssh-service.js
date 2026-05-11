@@ -11,6 +11,40 @@ const { SSHConn } = require("../connections/ssh-connection.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { ViewManager } = require("../ui/view-option.js");
 class SSHService {
+    getJumpHostOptions(currentId = "") {
+        const all = SSHVO.getAll() || {};
+        return Object.keys(all)
+            .map(id => all[id])
+            .filter(item => item && item.id !== currentId)
+            .map(item => ({
+            id: item.id,
+            label: SSHVO.title(item),
+            name: item.name || SSHVO.title(item)
+        }));
+    }
+    validateJumpHost(sshi) {
+        const jump = Object.assign({ enabled: false, sshId: "" }, (sshi.ssh && sshi.ssh.jump) || {});
+        sshi.ssh.jump = jump;
+        if (!jump.enabled) {
+            jump.sshId = "";
+            return null;
+        }
+        if (!jump.sshId) {
+            return "请选择跳板机";
+        }
+        if (jump.sshId === sshi.id) {
+            return "不能选择当前连接作为跳板机";
+        }
+        const jumpVO = SSHVO.get(jump.sshId);
+        if (!jumpVO || !jumpVO.ssh) {
+            return "跳板机不存在";
+        }
+        const nestedJump = Object.assign({ enabled: false }, (jumpVO.ssh.ssh && jumpVO.ssh.ssh.jump) || {});
+        if (nestedJump.enabled) {
+            return "暂不支持多级跳板";
+        }
+        return null;
+    }
     createSSHView(sshInfo, flag) {
         const tis = {
             tab_host_info_title: (0, Localize)("xplot.view.connect.tab.host.info.title"),
@@ -67,11 +101,12 @@ class SSHService {
                     handler.emit("route", 'ssh');
                 }).on("route-ssh", () => {
                     const groups = GroupAPI.groups_list();
+                    const jumpHosts = this.getJumpHostOptions(sshInfo && sshInfo.id ? sshInfo.id : "");
                     if (flag == "edit") {
-                        handler.emit("edit", { sshInfo: sshInfo, titles: tis, groups: groups });
+                        handler.emit("edit", { sshInfo: sshInfo, titles: tis, groups: groups, jumpHosts });
                     }
                     else {
-                        handler.emit("add", { sshInfo: sshInfo, titles: tis, groups: groups });
+                        handler.emit("add", { sshInfo: sshInfo, titles: tis, groups: groups, jumpHosts });
                     }
                 }).on("CONNECT_SSH_INFO_CONNECT", (content) => {
                     let sshi = content.sshInfo;
@@ -88,6 +123,11 @@ class SSHService {
                     if (!sshi.ssh.port) {
                         msg = (0, Localize)("xplot.msg.conn.input.port");
                     }
+                    if (msg) {
+                        handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
+                        return;
+                    }
+                    msg = this.validateJumpHost(sshi);
                     if (msg) {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
@@ -124,6 +164,11 @@ class SSHService {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
+                    msg = this.validateJumpHost(sshi);
+                    if (msg) {
+                        handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
+                        return;
+                    }
                     try {
                         sshi = this.parsPrivates2PrivateKey(sshi);
                     } catch(e) {
@@ -150,6 +195,11 @@ class SSHService {
                     if (!sshi.ssh.port) {
                         msg = (0, Localize)("xplot.msg.conn.input.port");
                     }
+                    if (msg) {
+                        handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
+                        return;
+                    }
+                    msg = this.validateJumpHost(sshi);
                     if (msg) {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;

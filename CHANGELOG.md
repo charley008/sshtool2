@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.1.0 - 2026-05-11
+
+- Added single-hop SSH jump host support for SSH/SFTP/terminal connections.
+- Added SSH add/edit controls for enabling a jump host and selecting an existing SSH connection.
+- Kept FTP, RDP, VNC, and port-forwarding behavior unchanged.
+- Added validation for missing jump host, self-jump, and nested jump host configurations.
+
 ## 2.0.2 - 2026-05-11
 
 - Hardened SSH port forwarding command execution by avoiding shell string concatenation and removing `sshpass -p` password exposure.

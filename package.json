@@ -2,7 +2,7 @@
   "name": "sshtools",
   "displayName": "SSH Tools",
   "description": "XPLOT Tools for vscode;SSH,FTP,Remote",
-  "version": "2.0.2",
+  "version": "2.1.0",
   "publisher": "XPLOT",
   "engines": {
     "vscode": "^1.85.0"
