@@ -37,14 +37,6 @@ class Node extends AbstractNode {
             SSHAPI.copy_ssh_command(this);
         }
     }
-    copyHostInfo() {
-        if (this.info.type == Type.SSH) {
-            SSHAPI.copy_ssh_info(this.info.ssh);
-        }
-        if (this.info.type == Type.FTP) {
-            FTPAPI.copy_ftp_info(this.info.ftp);
-        }
-    }
     copyName() {
         if (this.info.type == Type.SSH) {
             SSHAPI.copy_name(this);

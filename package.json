@@ -2,7 +2,7 @@
   "name": "sshtools",
   "displayName": "SSH Tools",
   "description": "XPLOT Tools for vscode;SSH,FTP,Remote",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "publisher": "XPLOT",
   "engines": {
     "vscode": "^1.85.0"
@@ -37,7 +37,6 @@
     "onCommand:xplot.add",
     "onCommand:xplot.clearall",
     "onCommand:xplot.config",
-    "onCommand:xplot.config.clipboard.import",
     "onCommand:xplot.connection.delete",
     "onCommand:xplot.connection.rdesktop",
     "onCommand:xplot.connection.terminal",
@@ -62,7 +61,6 @@
     "onCommand:xplot.group.out",
     "onCommand:xplot.group.rename",
     "onCommand:xplot.host.copy",
-    "onCommand:xplot.host.info.copy",
     "onCommand:xplot.refresh",
     "onCommand:xplot.reload",
     "onCommand:xplot.remote.management",
@@ -318,11 +316,6 @@
         "category": "XPLOT"
       },
       {
-        "command": "xplot.config.clipboard.import",
-        "title": "%xplot.config.clipboard.import%",
-        "category": "XPLOT"
-      },
-      {
         "command": "xplot.connection.unlink",
         "title": "%xplot.conn.unlink.title%",
         "icon": {
@@ -403,10 +396,6 @@
         "title": "%xplot.conn.cpsshcmd.title%"
       },
       {
-        "command": "xplot.host.info.copy",
-        "title": "%xplot.conn.cphostinfo.title%"
-      },
-      {
         "command": "xplot.forward.port",
         "title": "%xplot.conn.forwardport.title%"
       },
@@ -467,11 +456,6 @@
           "command": "xplot.config",
           "when": "view =~ /^xplot.online$|^xplot.manager$/",
           "group": "2_navigation@0"
-        },
-        {
-          "command": "xplot.config.clipboard.import",
-          "when": "view =~ /^xplot.online$|^xplot.manager$/",
-          "group": "3_navigation@0"
         },
         {
           "command": "xplot.clearall",
@@ -549,11 +533,6 @@
           "command": "xplot.host.copy",
           "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(ssh|workspace|group)$/",
           "group": "0_copy@2"
-        },
-        {
-          "command": "xplot.host.info.copy",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
-          "group": "0_copy@3"
         },
         {
           "command": "xplot.copy.scp.path",
@@ -679,7 +658,9 @@
     "recover:out": "node ../scripts/recover-out.js",
     "package": "node scripts/package-vsix.js",
     "package:npx": "node scripts/package-vsix.js",
-    "dev": "webpack --mode development"
+    "dev": "webpack --mode development",
+    "test:ssh-credentials": "node scripts/test-ssh-credentials.js",
+    "test:ftp-credentials": "node scripts/test-ftp-credentials.js"
   },
   "devDependencies": {
     "@types/node": "^25.6.2",

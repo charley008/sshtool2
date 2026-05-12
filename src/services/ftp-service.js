@@ -9,6 +9,7 @@ const { Util } = require("../utils/util.js");
 const Localize = require("../ui/localize.js").default;
 const { FTPConn } = require("../connections/ftp-connection.js");
 const { FTPVO } = require("../models/ftp-model.js");
+const { FTPCredentialService } = require("./ftp-credential-service.js");
 const { ViewManager } = require("../ui/view-option.js");
 class FTPService {
     createFTPView(ftpInfo, flag) {
@@ -50,7 +51,7 @@ class FTPService {
                 }).on("route-ftp", () => {
                     const groups = GroupAPI.groups_list();
                     if (flag == "edit") {
-                        handler.emit("edit", { ftpInfo: ftpInfo, titles: tis, groups: groups });
+                        handler.emit("edit", { ftpInfo: FTPCredentialService.sanitize(ftpInfo), titles: tis, groups: groups });
                     }
                     else {
                         handler.emit("add", { ftpInfo: ftpInfo, titles: tis, groups: groups });

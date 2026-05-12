@@ -261,7 +261,7 @@ const ConnectionPage = defineComponent({
           <el-form-item label="端口"><el-input-number v-model="conn.port" :min="1" :max="65535" /></el-form-item>
           <el-form-item label="用户" v-if="kind === 'ftp'"><el-input v-model="conn.user" /></el-form-item>
           <el-form-item label="用户" v-else><el-input v-model="conn.username" /></el-form-item>
-          <el-form-item label="密码"><el-input v-model="conn.password" type="password" show-password /></el-form-item>
+          <el-form-item label="密码"><el-input v-model="conn.password" type="password" show-password :placeholder="mode === 'edit' ? '留空则保留已保存密码' : ''" /></el-form-item>
           <el-form-item label="分组">
             <el-select v-model="info.group" filterable allow-create default-first-option>
               <el-option v-for="item in groups" :key="groupName(item)" :label="groupName(item)" :value="groupName(item)" />
@@ -285,8 +285,8 @@ const ConnectionPage = defineComponent({
               <el-option v-for="item in jumpHosts" :key="item.id" :label="item.label" :value="item.id" />
             </el-select>
           </el-form-item>
-          <el-form-item label="私钥" v-if="kind === 'ssh'"><el-input v-model="conn.privates" type="textarea" :rows="4" /></el-form-item>
-          <el-form-item label="密钥密码" v-if="kind === 'ssh'"><el-input v-model="conn.passphrase" type="password" show-password /></el-form-item>
+          <el-form-item label="私钥" v-if="kind === 'ssh'"><el-input v-model="conn.privates" type="textarea" :rows="4" :placeholder="mode === 'edit' ? '留空则保留已保存私钥' : ''" /></el-form-item>
+          <el-form-item label="密钥密码" v-if="kind === 'ssh'"><el-input v-model="conn.passphrase" type="password" show-password :placeholder="mode === 'edit' ? '留空则保留已保存密钥密码' : ''" /></el-form-item>
           <div class="actions">
             <el-button type="primary" @click="submit(saveEvent)">保存</el-button>
             <el-button @click="submit(testEvent || connectEvent)">测试</el-button>
@@ -564,13 +564,17 @@ const ConfigPage = defineComponent({
   components: { JsonPreview },
   setup() {
     const configvos = ref({});
-    const importText = ref("");
+    const exportPassword = ref("");
+    const importPassword = ref("");
     const disposers = [
       bus.on("EXPORT", (payload) => { configvos.value = payload?.configvos || {}; }),
       bus.on("IMPORT", (payload) => {
         configvos.value = payload?.configvos || {};
         const count = Object.keys(configvos.value).length;
         ElMessage.success(`成功导入 ${count} 个连接配置`);
+      }),
+      bus.on("CONNECTION_ERROR", (payload) => {
+        ElMessage.error(payload?.msg || "操作失败");
       }),
     ];
     onBeforeUnmount(() => disposers.forEach((dispose) => dispose()));
@@ -603,13 +607,6 @@ const ConfigPage = defineComponent({
       }
       return '未知配置';
     };
-    const saveImport = () => {
-      try {
-        bus.emit("IMPORT_CONFIGS_TO_SAVE", { configvos: JSON.parse(importText.value || "[]") });
-      } catch (error) {
-        ElMessage.error(error.message);
-      }
-    };
     const ensureSelection = () => {
       if (!selectedKeys.value.length) {
         ElMessage.warning("请先选择要导出的配置");
@@ -617,28 +614,35 @@ const ConfigPage = defineComponent({
       }
       return true;
     };
-    const selectedKeyPayload = () => ({ configvos_key: clone(selectedKeys.value) });
-    const exportConfigs = () => {
-      if (ensureSelection()) bus.emit("EXPORT_CONFIGS", selectedKeyPayload());
+    const ensurePassword = (value, label) => {
+      if (!value || !String(value).trim()) {
+        ElMessage.warning(`请输入${label}`);
+        return false;
+      }
+      return true;
     };
-    const exportSecureConfigs = () => {
-      if (ensureSelection()) bus.emit("EXPORT_SECURE_CONFIGS", selectedKeyPayload());
+    const selectedKeyPayload = () => ({ configvos_key: clone(selectedKeys.value), password: exportPassword.value });
+    const exportConfigs = () => {
+      if (ensureSelection() && ensurePassword(exportPassword.value, "导出密码")) bus.emit("EXPORT_CONFIGS", selectedKeyPayload());
     };
     const exportJSON = () => {
-      if (ensureSelection()) bus.emit("EXPORT_JSON_CONFIGS", selectedKeyPayload());
+      if (ensureSelection() && ensurePassword(exportPassword.value, "导出密码")) bus.emit("EXPORT_JSON_CONFIGS", selectedKeyPayload());
     };
-    const exportSecureJSON = () => {
-      if (ensureSelection()) bus.emit("EXPORT_SECURE_JSON_CONFIGS", selectedKeyPayload());
+    const importFromFile = () => {
+      if (ensurePassword(importPassword.value, "导入密码")) {
+        bus.emit("IMPORT_FILE_CONFIGS", { password: importPassword.value });
+      }
     };
-    return { configvos, configRows, selectedKeys, allKeys, isAllSelected, toggleAll, getConfigLabel, importText, saveImport, exportConfigs, exportSecureConfigs, exportJSON, exportSecureJSON, bus };
+    return { configvos, configRows, selectedKeys, allKeys, isAllSelected, toggleAll, getConfigLabel, exportPassword, importPassword, importFromFile, exportConfigs, exportJSON, bus };
   },
   template: `
-    <main class="page">
+    <main class="page config-page">
+      <div class="config-shell">
       <header class="page-header">
         <h1 class="page-title">配置管理</h1>
       </header>
-      <section class="panel">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+      <section class="panel config-panel">
+        <div class="config-select-header">
           <div>
             <span style="font-size:14px; font-weight:600;">选择连接</span>
             <span class="muted" style="font-size:12px; margin-left:8px;">共 {{ configRows.length }} 个连接</span>
@@ -651,22 +655,25 @@ const ConfigPage = defineComponent({
           </el-checkbox>
         </el-checkbox-group>
         <p class="muted" v-else style="margin:0;">暂无连接配置</p>
+        <div class="config-password config-password-export">
+          <el-input v-model="exportPassword" type="password" show-password placeholder="导出密码（必填）" />
+        </div>
         <div class="actions" style="margin-top:16px;">
           <el-button type="primary" @click="exportConfigs">导出数据库 (.db)</el-button>
-          <el-button @click="exportSecureConfigs">安全导出数据库 (.db)</el-button>
           <el-button @click="exportJSON">导出 JSON (.json)</el-button>
-          <el-button @click="exportSecureJSON">安全导出 JSON (.json)</el-button>
         </div>
       </section>
-      <section class="panel">
+      <section class="panel config-panel">
         <h3 style="margin:0 0 8px; font-size:14px;">导入配置</h3>
-        <p class="muted" style="margin:0 0 12px; font-size:12px;">支持 .db / .json 配置文件，或直接粘贴 JSON 配置</p>
-        <div class="actions" style="margin-top:0; margin-bottom:12px;">
-          <el-button @click="bus.emit('IMPORT_FILE_CONFIGS')">从文件导入</el-button>
+        <p class="muted" style="margin:0 0 12px; font-size:12px;">支持通过安全导出的 .db / .json 配置文件恢复备份</p>
+        <div class="config-password config-password-import">
+          <el-input v-model="importPassword" type="password" show-password placeholder="导入密码（必填）" />
         </div>
-        <el-input v-model="importText" type="textarea" :rows="5" placeholder='粘贴 JSON 配置' />
-        <div class="actions"><el-button type="primary" @click="saveImport" :disabled="!importText.trim()">保存导入</el-button></div>
+        <div class="actions" style="margin-top:0; margin-bottom:12px;">
+          <el-button @click="importFromFile">从文件导入</el-button>
+        </div>
       </section>
+      </div>
     </main>
   `,
 });

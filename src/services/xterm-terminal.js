@@ -23,6 +23,7 @@ const { Console } = require("../ui/console.js");
 const { Storage } = require("../storage/storage.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { SSHConn } = require("../connections/ssh-connection.js");
+const { SSHCredentialService } = require("./ssh-credential-service.js");
 
 function cloneTerminalConnectOptions(sshinfo, option) {
     const ssh = Object.assign({}, sshinfo.ssh || {});
@@ -153,8 +154,10 @@ class XtermTerminal {
             client.on('keyboard-interactive', () => {
                 end();
             });
-            SSHConn.openJumpStream(sshinfo, {}).then(({ option }) => {
-                client.connect(cloneTerminalConnectOptions(sshinfo, option));
+            SSHCredentialService.hydrate(sshinfo).then((hydratedSshInfo) => {
+                return SSHConn.openJumpStream(hydratedSshInfo, {}).then(({ option }) => {
+                    client.connect(cloneTerminalConnectOptions(hydratedSshInfo, option));
+                });
             }).catch((err) => {
                 sshlog(false, 'CONN ERROR', err);
             });

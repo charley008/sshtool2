@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.2 - 2026-05-12
+
+- Moved saved SSH credentials into VS Code SecretStorage.
+- Moved saved FTP passwords into VS Code SecretStorage.
+- Changed config export/import to password-protected file-based backup only.
+- Removed clipboard host-info copy and pasted JSON import paths that could expose sensitive data.
+- Refined the config management page layout.
+
 ## 2.1.1 - 2026-05-12
 
 - Added safe config export: normal `.db` / `.json` exports now omit passwords, private keys, and passphrases.

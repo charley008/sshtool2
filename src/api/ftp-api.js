@@ -34,21 +34,8 @@ const { FTPVO } = require("../models/ftp-model.js");
 // Node classes loaded lazily in build_children() to avoid circular dependency
 const { FTPConn } = require("../connections/ftp-connection.js");
 const _core = require("./core-api.js");
-const { ConfigVO } = require("../models/config-model.js");
 // FTP node classes also loaded lazily in build_children()
 class FTPAPI {
-    //copy主机信息
-    static copy_ftp_info(ftpInfo) {
-        const title = FTPVO.title(ftpInfo);
-        const ftpvo = FTPVO.get(ftpInfo.id);
-        const configvo = new ConfigVO(constant_1.Type.FTP);
-        configvo.ftpvo = ftpvo;
-        // convert JSON object to string
-        let data = JSON.stringify(configvo, null, 0);
-        // 加密
-        data = Util.genSign(data);
-        Util.copyToBoard(`ftp://${ftpInfo.name}_${title}#\n${data}`);
-    }
     //ftpvo导入
     static import_ftpvo(ftpvo) {
         const ftpInfo = ftpvo.ftp;

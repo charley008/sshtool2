@@ -8,6 +8,8 @@ scripts/**
 public/**
 webpack.config.js
 jsconfig.json
+PROJECT_LOG.md
+DECISIONS.md
 *.log
 *.vsix
 .gitignore

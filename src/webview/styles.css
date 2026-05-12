@@ -257,6 +257,40 @@ body {
   background: var(--vscode-sideBar-background, #252526);
 }
 
+.config-page {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.config-shell {
+  width: min(760px, calc(100vw - 48px));
+}
+
+.config-panel + .config-panel {
+  margin-top: 12px;
+}
+
+.config-select-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.config-password {
+  width: min(320px, 100%);
+}
+
+.config-password-export {
+  margin-top: 16px;
+}
+
+.config-password-import {
+  margin-bottom: 12px;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;

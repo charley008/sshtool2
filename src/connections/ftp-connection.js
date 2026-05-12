@@ -14,6 +14,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 
 const { Console } = require("../ui/console.js");
 const { FTPVO } = require("../models/ftp-model.js");
+const { FTPCredentialService } = require("../services/ftp-credential-service.js");
 const Client = require("./ftp-client-runtime.js");
 class FTP {
 }
@@ -50,19 +51,21 @@ class FTPConn {
                 this.closeFTP(ftpInfo);
                 reject(err);
             };
-            client.on('ready', () => {
-                this.activeFTPConn[key] = { client };
-                finishResolve(this.activeFTPConn[key]);
-            }).on('error', (err) => {
-                // Console.err({message:`${FTPVO.title(ftpInfo)},${err.message}`});
-                finishReject(err);
-                // resolve(null)
-            }).on('end', () => {
-                if (this.activeFTPConn[key]) {
-                    this.activeFTPConn[key].client.destroy();
-                    delete this.activeFTPConn[key];
-                }
-            }).connect(Object.assign(Object.assign({}, ftpInfo.ftp), option));
+            FTPCredentialService.hydrate(ftpInfo).then((hydratedFtpInfo) => {
+                client.on('ready', () => {
+                    this.activeFTPConn[key] = { client };
+                    finishResolve(this.activeFTPConn[key]);
+                }).on('error', (err) => {
+                    // Console.err({message:`${FTPVO.title(ftpInfo)},${err.message}`});
+                    finishReject(err);
+                    // resolve(null)
+                }).on('end', () => {
+                    if (this.activeFTPConn[key]) {
+                        this.activeFTPConn[key].client.destroy();
+                        delete this.activeFTPConn[key];
+                    }
+                }).connect(Object.assign(Object.assign({}, hydratedFtpInfo.ftp), option));
+            }).catch(finishReject);
         });
     }
     static verifyFTP(ftpInfo) {

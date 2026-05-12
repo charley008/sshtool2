@@ -27,3 +27,5 @@ exports["debug-runtime"] = require("./debug-runtime.js");
 exports["sensitive-fields"] = require("./sensitive-fields.js");
 exports["message-guard"] = require("./message-guard.js");
 exports["config-security"] = require("./config-security.js");
+exports["ssh-credential-fields"] = require("./ssh-credential-fields.js");
+exports["ftp-credential-fields"] = require("./ftp-credential-fields.js");

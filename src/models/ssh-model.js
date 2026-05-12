@@ -6,6 +6,7 @@ const { ForwardDAO } = require("../storage/forward.js");
 const { RemoteDAO } = require("../storage/remote.js");
 const { SSHDAO } = require("../storage/ssh.js");
 const { WorkspaceDAO } = require("../storage/workspace.js");
+const { SSHCredentialService } = require("../services/ssh-credential-service.js");
 class SSHVO {
     constructor(ssh, forwards, workspaces, remotes) {
         this.ssh = ssh;
@@ -17,9 +18,14 @@ class SSHVO {
         return new SSHDAO().selectAll();
     }
     static delAll() {
+        const sshs = SSHVO.getAll() || {};
+        const ids = Object.keys(sshs);
         new ForwardDAO().deleteAll();
         new WorkspaceDAO().deleteAll();
         new RemoteDAO().deleteAll();
+        SSHCredentialService.deleteMany(ids).catch((err) => {
+            console.warn("[SSH Tools] Failed to delete all SSH credentials:", err && err.message ? err.message : err);
+        });
         return new SSHDAO().deleteAll();
     }
     static get(sshId) {
@@ -36,15 +42,18 @@ class SSHVO {
         return false;
     }
     static post(sshInfo) {
-        return new SSHDAO().update(sshInfo);
+        return new SSHDAO().update(SSHCredentialService.sanitize(sshInfo));
     }
     static put(sshInfo) {
-        return new SSHDAO().insert(sshInfo);
+        return new SSHDAO().insert(SSHCredentialService.sanitize(sshInfo));
     }
     static del(sshId) {
         new ForwardDAO().deleteBySSHId(sshId);
         new RemoteDAO().deleteBySSHId(sshId);
         new WorkspaceDAO().deleteByEId(sshId);
+        SSHCredentialService.delete(sshId).catch((err) => {
+            console.warn("[SSH Tools] Failed to delete SSH credentials:", err && err.message ? err.message : err);
+        });
         return new SSHDAO().deleteById(sshId);
     }
     static title(sshInfo) {

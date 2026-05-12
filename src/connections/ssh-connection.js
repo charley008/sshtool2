@@ -15,6 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const { Client } = require("./ssh2-runtime.js");
 const { Console } = require("../ui/console.js");
 const { SSHVO } = require("../models/ssh-model.js");
+const { SSHCredentialService } = require("../services/ssh-credential-service.js");
 
 function normalizeJump(sshInfo) {
     const jump = sshInfo && sshInfo.ssh ? sshInfo.ssh.jump : null;
@@ -48,7 +49,7 @@ class SSHConn {
         if (nestedJump.enabled) {
             return Promise.reject(new Error("Nested jump hosts are not supported."));
         }
-        return this.get(jumpInfo, false).then(({ client }) => {
+        return SSHCredentialService.hydrate(jumpInfo).then((hydratedJumpInfo) => this.get(hydratedJumpInfo, false)).then(({ client }) => {
             return new Promise((resolve, reject) => {
                 client.forwardOut("127.0.0.1", 0, sshInfo.ssh.host, Number(sshInfo.ssh.port || 22), (err, stream) => {
                     if (err) {
@@ -129,9 +130,11 @@ class SSHConn {
                     delete this.activeConn[key];
                 }
             });
-            const connectOptions = forwardOption ? Promise.resolve({ option, jumpKey: null }) : this.openJumpStream(sshInfo, option);
-            connectOptions.then(({ option: effectiveOption }) => {
-                client.connect(cloneConnectOptions(sshInfo, effectiveOption));
+            SSHCredentialService.hydrate(sshInfo).then((hydratedSshInfo) => {
+                const connectOptions = forwardOption ? Promise.resolve({ option, jumpKey: null }) : this.openJumpStream(hydratedSshInfo, option);
+                return connectOptions.then(({ option: effectiveOption }) => {
+                    client.connect(cloneConnectOptions(hydratedSshInfo, effectiveOption));
+                });
             }).catch(finishReject);
         });
     }

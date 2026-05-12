@@ -9,6 +9,8 @@ const { Util } = require("../utils/util.js");
 const Localize = require("../ui/localize.js").default;
 const { SSHVO } = require("../models/ssh-model.js");
 const { ConfigService } = require("../services/config-service.js");
+const { SSHCredentialService } = require("../services/ssh-credential-service.js");
+const { FTPCredentialService } = require("../services/ftp-credential-service.js");
 const { ConfigVO } = require("../models/config-model.js");
 const { createEncryptedExport, decryptExport, isEncryptedExport } = require("../utils/config-security.js");
 const { omitSensitive } = require("../utils/sensitive-fields.js");
@@ -40,6 +42,23 @@ class ConfigAPI {
                 if (configvo) {
                     configvos[id] = configvo;
                 }
+            }
+        }
+        return configvos;
+    }
+
+    static async get_configvos_async(option = {}) {
+        const configvos = ConfigAPI.get_configvos(option);
+        if (!option.includeSensitive) {
+            return configvos;
+        }
+        for (const id of Object.keys(configvos)) {
+            const configvo = configvos[id];
+            if (configvo && configvo.type == constant_1.Type.SSH && configvo.sshvo && configvo.sshvo.ssh) {
+                configvo.sshvo.ssh = await SSHCredentialService.hydrate(configvo.sshvo.ssh);
+            }
+            if (configvo && configvo.type == constant_1.Type.FTP && configvo.ftpvo && configvo.ftpvo.ftp) {
+                configvo.ftpvo.ftp = await FTPCredentialService.hydrate(configvo.ftpvo.ftp);
             }
         }
         return configvos;
@@ -146,19 +165,19 @@ class ConfigAPI {
         }
     }
 
-    static export(path, option = {}) {
+    static async export(path, option = {}) {
         if (path.startsWith('/') && path[2] === ':') {
             path = path.substr(1);
         }
         const dtime = Util.formatDate().replace(/:/gi, ".");
         const ext = option.plainJson ? "json" : "db";
         const dirFile = `${path}/sshtools_${dtime}.${ext}`;
-        ConfigAPI.export_to_file(dirFile, option);
+        await ConfigAPI.export_to_file(dirFile, option);
         return dirFile;
     }
 
-    static export_to_file(filePath, option = {}) {
-        let configvos = ConfigAPI.get_configvos(option);
+    static async export_to_file(filePath, option = {}) {
+        let configvos = await ConfigAPI.get_configvos_async(option);
         if (option.includeSensitive) {
             configvos = createEncryptedExport(configvos, option.password);
         } else {

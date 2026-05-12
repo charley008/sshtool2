@@ -85,7 +85,6 @@ function activate(context) {
     add(Command.ADD_SSH, (node) => serviceManager.managerProvider && serviceManager.managerProvider.save_ssh());
     add(Command.ADD_FTP, (node) => serviceManager.managerProvider && serviceManager.managerProvider.save_ftp());
     add('xplot.clearall', () => serviceManager.managerProvider && serviceManager.managerProvider.clearall());
-    add('xplot.config.clipboard.import', () => ConfigAPI && ConfigAPI.clipboard_import_configvo());
     add('xplot.edit', (node) => serviceManager.managerProvider && serviceManager.managerProvider.edit(node));
     add('xplot.connection.rdesktop', (node) => node && node.openRDesktop());
     add('xplot.connection.terminal', (node) => node && node.openTerminal());
@@ -98,7 +97,6 @@ function activate(context) {
     add('xplot.copy.scp.path', (node) => node && node.copySCPPath());
     add('xplot.file.new', (node) => node && node.newFile());
     add('xplot.host.copy', (node) => node && node.copySSHCommand());
-    add('xplot.host.info.copy', (node) => node && node.copyHostInfo());
     add('xplot.forward.port', (node) => node && node.fowardPort());
     add('xplot.workspace.management', (node) => node && node.workspaceManagement());
     add('xplot.remote.management', (node) => node && node.remoteManagement());

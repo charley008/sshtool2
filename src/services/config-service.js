@@ -10,7 +10,6 @@ const _cfg = require("../api/config-api.js");
 const _utl = require("../utils/util.js");
 const Localize = require("../ui/localize.js").default;
 const { Console } = require("../ui/console.js");
-const { ConfigVO } = require("../models/config-model.js");
 const { ViewManager } = require("../ui/view-option.js");
 
 class ConfigService {
@@ -47,19 +46,11 @@ class ConfigService {
         });
     }
 
-    async importConfigFile(filePath) {
-        try {
-            return _cfg.ConfigAPI.import(filePath);
-        } catch (error) {
-            if (!error || error.message !== "Export password is required") {
-                throw error;
-            }
-            const password = await this.promptImportPassword();
-            if (password === undefined) {
-                throw new Error("Import cancelled");
-            }
-            return _cfg.ConfigAPI.import(filePath, { password });
+    async importConfigFile(filePath, password) {
+        if (!password) {
+            throw new Error("Import password is required");
         }
+        return _cfg.ConfigAPI.import(filePath, { password });
     }
 
     async importConfigValue(value) {
@@ -111,6 +102,10 @@ class ConfigService {
                         }
                     })
                     .on("EXPORT_CONFIGS", (content) => {
+                        if (!content.password) {
+                            handler.emit("CONNECTION_ERROR", { titles, msg: "Export password is required" });
+                            return;
+                        }
                         vscode.window
                             .showOpenDialog({
                                 canSelectFiles: false,
@@ -119,40 +114,23 @@ class ConfigService {
                                 defaultUri: vscode.Uri.file(os.homedir()),
                                 openLabel: Localize("xplot.msg.export.select.folder"),
                             })
-                            .then((uri) => {
+                            .then(async (uri) => {
                                 if (uri && uri[0]) {
-                                    const filePath = _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
-                                        mode: false,
-                                        ids: content.configvos_key,
-                                    });
-                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
-                                }
-                            });
-                    })
-                    .on("EXPORT_SECURE_CONFIGS", async (content) => {
-                        const password = await this.promptExportPassword();
-                        if (password === undefined) return;
-                        vscode.window
-                            .showOpenDialog({
-                                canSelectFiles: false,
-                                canSelectMany: false,
-                                canSelectFolders: true,
-                                defaultUri: vscode.Uri.file(os.homedir()),
-                                openLabel: Localize("xplot.msg.export.select.folder"),
-                            })
-                            .then((uri) => {
-                                if (uri && uri[0]) {
-                                    const filePath = _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
+                                    const filePath = await _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
                                         mode: false,
                                         ids: content.configvos_key,
                                         includeSensitive: true,
-                                        password,
+                                        password: content.password,
                                     });
                                     vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
                                 }
                             });
                     })
                     .on("EXPORT_JSON_CONFIGS", (content) => {
+                        if (!content.password) {
+                            handler.emit("CONNECTION_ERROR", { titles, msg: "Export password is required" });
+                            return;
+                        }
                         const now = new Date();
                         const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`;
                         vscode.window
@@ -160,41 +138,24 @@ class ConfigService {
                                 defaultUri: vscode.Uri.file(`sshtools_${ts}.json`),
                                 filters: { 'JSON Files': ['json'] },
                             })
-                            .then((uri) => {
+                            .then(async (uri) => {
                                 if (uri) {
-                                    const filePath = _cfg.ConfigAPI.export_to_file(uri.fsPath, {
-                                        mode: false,
-                                        ids: content.configvos_key,
-                                        plainJson: true,
-                                    });
-                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
-                                }
-                            });
-                    })
-                    .on("EXPORT_SECURE_JSON_CONFIGS", async (content) => {
-                        const password = await this.promptExportPassword();
-                        if (password === undefined) return;
-                        const now = new Date();
-                        const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`;
-                        vscode.window
-                            .showSaveDialog({
-                                defaultUri: vscode.Uri.file(`sshtools_secure_${ts}.json`),
-                                filters: { 'JSON Files': ['json'] },
-                            })
-                            .then((uri) => {
-                                if (uri) {
-                                    const filePath = _cfg.ConfigAPI.export_to_file(uri.fsPath, {
+                                    const filePath = await _cfg.ConfigAPI.export_to_file(uri.fsPath, {
                                         mode: false,
                                         ids: content.configvos_key,
                                         includeSensitive: true,
-                                        password,
+                                        password: content.password,
                                         plainJson: true,
                                     });
                                     vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
                                 }
                             });
                     })
-                    .on("IMPORT_FILE_CONFIGS", () => {
+                    .on("IMPORT_FILE_CONFIGS", (content) => {
+                        if (!content.password) {
+                            handler.emit("CONNECTION_ERROR", { titles, msg: "Import password is required" });
+                            return;
+                        }
                         vscode.window
                             .showOpenDialog({
                                 canSelectFiles: true,
@@ -206,7 +167,7 @@ class ConfigService {
                             .then(async (uri) => {
                                 if (uri && uri[0]) {
                                     try {
-                                        const configvos = await this.importConfigFile(uri[0].fsPath || uri[0].path);
+                                        const configvos = await this.importConfigFile(uri[0].fsPath || uri[0].path, content.password);
                                         _cfg.ConfigAPI.import_configvos(configvos);
                                         _core.API.refresh();
                                         const count = Object.keys(configvos || {}).length;
@@ -219,19 +180,6 @@ class ConfigService {
                                     }
                                 }
                             });
-                    })
-                    .on("IMPORT_CONFIGS_TO_SAVE", async (content) => {
-                        try {
-                            const configvos = await this.importConfigValue(content.configvos);
-                            _cfg.ConfigAPI.import_configvos(configvos);
-                            _core.API.refresh();
-                            handler.emit("IMPORT", { configvos, titles });
-                        } catch (error) {
-                            handler.emit("CONNECTION_ERROR", {
-                                titles,
-                                msg: `Save import failed: ${error.message}`,
-                            });
-                        }
                     });
             },
         });

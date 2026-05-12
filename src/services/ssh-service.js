@@ -10,6 +10,7 @@ const Localize = require("../ui/localize.js").default;
 const { SSHConn } = require("../connections/ssh-connection.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { ViewManager } = require("../ui/view-option.js");
+const { SSHCredentialService } = require("./ssh-credential-service.js");
 class SSHService {
     getJumpHostOptions(currentId = "") {
         const all = SSHVO.getAll() || {};
@@ -44,6 +45,31 @@ class SSHService {
             return "暂不支持多级跳板";
         }
         return null;
+    }
+    validateRequiredSshInfo(sshi) {
+        if (!sshi.ssh.username) {
+            return (0, Localize)("xplot.msg.conn.input.username");
+        }
+        if (!sshi.ssh.password && !sshi.ssh.privateKey && !sshi.ssh.privates) {
+            return (0, Localize)("xplot.msg.conn.input.password");
+        }
+        if (!sshi.ssh.host) {
+            return (0, Localize)("xplot.msg.conn.input.host");
+        }
+        if (!sshi.ssh.port) {
+            return (0, Localize)("xplot.msg.conn.input.port");
+        }
+        return this.validateJumpHost(sshi);
+    }
+    async prepareRuntimeSshInfo(sshi) {
+        const parsed = this.parsPrivates2PrivateKey(sshi);
+        return SSHCredentialService.hydrate(parsed);
+    }
+    async persistSshInfo(sshi, type) {
+        const parsed = this.parsPrivates2PrivateKey(sshi);
+        await SSHCredentialService.saveFrom(parsed);
+        const sanitized = SSHCredentialService.sanitize(parsed);
+        return type == "edit" ? SSHVO.post(sanitized) : SSHVO.put(sanitized);
     }
     createSSHView(sshInfo, flag) {
         const tis = {
@@ -102,69 +128,38 @@ class SSHService {
                 }).on("route-ssh", () => {
                     const groups = GroupAPI.groups_list();
                     const jumpHosts = this.getJumpHostOptions(sshInfo && sshInfo.id ? sshInfo.id : "");
+                    const safeSshInfo = SSHCredentialService.sanitize(sshInfo);
                     if (flag == "edit") {
-                        handler.emit("edit", { sshInfo: sshInfo, titles: tis, groups: groups, jumpHosts });
+                        handler.emit("edit", { sshInfo: safeSshInfo, titles: tis, groups: groups, jumpHosts });
                     }
                     else {
-                        handler.emit("add", { sshInfo: sshInfo, titles: tis, groups: groups, jumpHosts });
+                        handler.emit("add", { sshInfo: safeSshInfo, titles: tis, groups: groups, jumpHosts });
                     }
-                }).on("CONNECT_SSH_INFO_CONNECT", (content) => {
+                }).on("CONNECT_SSH_INFO_CONNECT", async (content) => {
                     let sshi = content.sshInfo;
-                    let msg = null;
-                    if (!sshi.ssh.username) {
-                        msg = (0, Localize)("xplot.msg.conn.input.username");
-                    }
-                    if (!sshi.ssh.password && !sshi.ssh.privates) {
-                        msg = (0, Localize)("xplot.msg.conn.input.password");
-                    }
-                    if (!sshi.ssh.host) {
-                        msg = (0, Localize)("xplot.msg.conn.input.host");
-                    }
-                    if (!sshi.ssh.port) {
-                        msg = (0, Localize)("xplot.msg.conn.input.port");
-                    }
+                    sshi = await this.prepareRuntimeSshInfo(sshi);
+                    let msg = this.validateRequiredSshInfo(sshi);
                     if (msg) {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    msg = this.validateJumpHost(sshi);
-                    if (msg) {
-                        handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
-                        return;
-                    }
-                    sshi = this.parsPrivates2PrivateKey(sshi);
                     SSHConn.get(sshi, false).then(() => {
-                        if (content.type == "edit" ? SSHVO.post(sshi) : SSHVO.put(sshi)) {
+                        this.persistSshInfo(sshi, content.type).then((saved) => {
+                            if (!saved) {
+                                Console.info((0, Localize)("xplot.msg.conn.add.no", SSHVO.title(sshi)));
+                                return;
+                            }
                             API.refresh();
                             Console.info((0, Localize)("xplot.msg.conn.add.ok", SSHVO.title(sshi)));
                             handler.panel.dispose();
-                        }
-                        else {
-                            Console.info((0, Localize)("xplot.msg.conn.add.no", SSHVO.title(sshi)));
-                        }
+                        }).catch(err => handler.emit('CONNECTION_ERROR', { titles: tis, msg: err.message }));
                     }).catch(err => {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: err.message });
                     });
-                }).on("CONNECT_SSH_INFO_TEST", (content) => {
+                }).on("CONNECT_SSH_INFO_TEST", async (content) => {
                     let sshi = content.sshInfo;
-                    let msg = null;
-                    if (!sshi.ssh.username) {
-                        msg = (0, Localize)("xplot.msg.conn.input.username");
-                    }
-                    if (!sshi.ssh.password && !sshi.ssh.privates) {
-                        msg = (0, Localize)("xplot.msg.conn.input.password");
-                    }
-                    if (!sshi.ssh.host) {
-                        msg = (0, Localize)("xplot.msg.conn.input.host");
-                    }
-                    if (!sshi.ssh.port) {
-                        msg = (0, Localize)("xplot.msg.conn.input.port");
-                    }
-                    if (msg) {
-                        handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
-                        return;
-                    }
-                    msg = this.validateJumpHost(sshi);
+                    sshi = await this.prepareRuntimeSshInfo(sshi);
+                    let msg = this.validateRequiredSshInfo(sshi);
                     if (msg) {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
@@ -180,32 +175,15 @@ class SSHService {
                     }).catch(err => {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: err.message });
                     });
-                }).on("CONNECT_SSH_INFO_SAVE", (content) => {
+                }).on("CONNECT_SSH_INFO_SAVE", async (content) => {
                     let sshi = content.sshInfo;
-                    let msg = null;
-                    if (!sshi.ssh.username) {
-                        msg = (0, Localize)("xplot.msg.conn.input.username");
-                    }
-                    if (!sshi.ssh.password && !sshi.ssh.privates) {
-                        msg = (0, Localize)("xplot.msg.conn.input.password");
-                    }
-                    if (!sshi.ssh.host) {
-                        msg = (0, Localize)("xplot.msg.conn.input.host");
-                    }
-                    if (!sshi.ssh.port) {
-                        msg = (0, Localize)("xplot.msg.conn.input.port");
-                    }
+                    const runtimeSshInfo = await this.prepareRuntimeSshInfo(sshi);
+                    let msg = this.validateRequiredSshInfo(runtimeSshInfo);
                     if (msg) {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    msg = this.validateJumpHost(sshi);
-                    if (msg) {
-                        handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
-                        return;
-                    }
-                    sshi = this.parsPrivates2PrivateKey(sshi);
-                    const result = content.type == "edit" ? SSHVO.post(sshi) : SSHVO.put(sshi);
+                    const result = await this.persistSshInfo(sshi, content.type);
                     if (result) {
                         API.refresh();
                         handler.panel.dispose();
@@ -223,7 +201,7 @@ class SSHService {
             const title = (0, Localize)("xplot.view.connect.passphrase.save.title");
             if (sshi.ssh.privates != title) {
                 sshi.ssh.privateKey = sshi.ssh.privates;
-                sshi.ssh.privates = title;
+                sshi.ssh.privates = "";
             }
         }
         return sshi;

@@ -31,6 +31,7 @@ const { XtermTerminal } = require("../services/xterm-terminal.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { SSHConn } = require("../connections/ssh-connection.js");
 const { SSHService } = require("../services/ssh-service.js");
+const { SSHCredentialService } = require("../services/ssh-credential-service.js");
 const { WorkSpaceInfo } = require("../models/workspace-info.js");
 const { WorkSpaceVO } = require("../models/workspace-model.js");
 const { WorkSpace } = require("../models/workspace-entity.js");
@@ -40,7 +41,6 @@ const { ForwardVO } = require("../models/forward-model.js");
 const { RemoteVO } = require("../models/remote-model.js");
 const { ForwardService } = require("../services/forward-service.js");
 const { API } = require("./core-api.js");
-const { ConfigVO } = require("../models/config-model.js");
 class SSHAPI {
     //copy ssh 远程连接命令
     static copy_ssh_command(that) {
@@ -63,18 +63,6 @@ class SSHAPI {
         }
         Util.copyToBoard(cpstr);
     }
-    //copy主机信息
-    static copy_ssh_info(sshInfo) {
-        const title = SSHVO.title(sshInfo);
-        const sshvo = SSHVO.get(sshInfo.id);
-        const configvo = new ConfigVO(constant_1.Type.SSH);
-        configvo.sshvo = sshvo;
-        // convert JSON object to string
-        let data = JSON.stringify(configvo, null, 0);
-        // 加密
-        data = Util.genSign(data);
-        Util.copyToBoard(`ssh://${sshInfo.name}_${title}#\n${data}`);
-    }
     //sshvo导入
     static import_sshvo(sshvo) {
         const sshInfo = sshvo.ssh;
@@ -84,6 +72,9 @@ class SSHAPI {
         if (sshInfo && !sshInfo.group) {
             sshInfo.group = 'default';
         }
+        SSHCredentialService.saveFrom(sshInfo).catch((err) => {
+            console.warn("[SSH Tools] Failed to import SSH credentials:", err && err.message ? err.message : err);
+        });
         const remotes = sshvo.remotes;
         const forwards = sshvo.forwards;
         const workspaces = sshvo.workspaces;
