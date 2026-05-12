@@ -41,6 +41,7 @@ const CacheKey = {
     TEMP_HISTORY: "ssh.tmp.history",
     TEMP_STATUS_BAR: "ssh.tmp.statusbar",
     TEMP_KEYS: "ssh.tmp.keys",
+    SSH_HOST_KEYS: "ssh.host.keys",
     XPLOT_CACHEKEY_DATA_SSH: "xplot.cn.cachekey.data.ssh",
     XPLOT_CACHEKEY_DATA_WORKSPACE: "xplot.cn.cachekey.data.workspace",
     XPLOT_CACHEKEY_DATA_FORWARD: "xplot.cn.cachekey.data.forward",

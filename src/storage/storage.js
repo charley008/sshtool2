@@ -127,6 +127,12 @@ class Storage {
     static update_status_keys(keys) {
         this.context.globalState.update(CacheKey.TEMP_KEYS, keys);
     }
+    static get_ssh_host_keys() {
+        return this.context.globalState.get(CacheKey.SSH_HOST_KEYS) || {};
+    }
+    static update_ssh_host_keys(hostKeys) {
+        this.context.globalState.update(CacheKey.SSH_HOST_KEYS, hostKeys || {});
+    }
 }
 exports.Storage = Storage;
 Storage.tempFileRemotes = {};

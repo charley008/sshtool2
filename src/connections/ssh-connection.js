@@ -16,6 +16,7 @@ const { Client } = require("./ssh2-runtime.js");
 const { Console } = require("../ui/console.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { SSHCredentialService } = require("../services/ssh-credential-service.js");
+const { SSHHostKeyService } = require("../services/ssh-hostkey-service.js");
 
 function normalizeJump(sshInfo) {
     const jump = sshInfo && sshInfo.ssh ? sshInfo.ssh.jump : null;
@@ -25,7 +26,7 @@ function normalizeJump(sshInfo) {
 function cloneConnectOptions(sshInfo, option) {
     const ssh = Object.assign({}, sshInfo.ssh || {});
     delete ssh.jump;
-    return Object.assign(ssh, option);
+    return Object.assign(ssh, option, SSHHostKeyService.createVerifier(sshInfo));
 }
 
 class SSH {

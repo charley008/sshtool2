@@ -2,7 +2,7 @@
   "name": "sshtools",
   "displayName": "SSH Tools",
   "description": "XPLOT Tools for vscode;SSH,FTP,Remote",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "publisher": "XPLOT",
   "engines": {
     "vscode": "^1.85.0"
@@ -660,7 +660,8 @@
     "package:npx": "node scripts/package-vsix.js",
     "dev": "webpack --mode development",
     "test:ssh-credentials": "node scripts/test-ssh-credentials.js",
-    "test:ftp-credentials": "node scripts/test-ftp-credentials.js"
+    "test:ftp-credentials": "node scripts/test-ftp-credentials.js",
+    "test:path-guard": "node scripts/test-path-guard.js"
   },
   "devDependencies": {
     "@types/node": "^25.6.2",

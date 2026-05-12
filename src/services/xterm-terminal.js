@@ -24,11 +24,12 @@ const { Storage } = require("../storage/storage.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { SSHConn } = require("../connections/ssh-connection.js");
 const { SSHCredentialService } = require("./ssh-credential-service.js");
+const { SSHHostKeyService } = require("./ssh-hostkey-service.js");
 
 function cloneTerminalConnectOptions(sshinfo, option) {
     const ssh = Object.assign({}, sshinfo.ssh || {});
     delete ssh.jump;
-    return Object.assign(ssh, option || {});
+    return Object.assign(ssh, option || {}, SSHHostKeyService.createVerifier(sshinfo));
 }
 
 class XtermTerminal {

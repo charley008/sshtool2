@@ -12,6 +12,11 @@ const Localize = require("../ui/localize.js").default;
 const { Console } = require("../ui/console.js");
 const { ViewManager } = require("../ui/view-option.js");
 
+function createExportTimestamp() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`;
+}
+
 class ConfigService {
     async promptExportPassword() {
         const password = await vscode.window.showInputBox({
@@ -106,17 +111,16 @@ class ConfigService {
                             handler.emit("CONNECTION_ERROR", { titles, msg: "Export password is required" });
                             return;
                         }
+                        const ts = createExportTimestamp();
                         vscode.window
-                            .showOpenDialog({
-                                canSelectFiles: false,
-                                canSelectMany: false,
-                                canSelectFolders: true,
-                                defaultUri: vscode.Uri.file(os.homedir()),
-                                openLabel: Localize("xplot.msg.export.select.folder"),
+                            .showSaveDialog({
+                                defaultUri: vscode.Uri.file(`sshtools_${ts}.db`),
+                                filters: { 'SSH Tools Config': ['db'] },
+                                saveLabel: Localize("xplot.msg.export.select.folder"),
                             })
                             .then(async (uri) => {
-                                if (uri && uri[0]) {
-                                    const filePath = await _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
+                                if (uri) {
+                                    const filePath = await _cfg.ConfigAPI.export_to_file(uri.fsPath, {
                                         mode: false,
                                         ids: content.configvos_key,
                                         includeSensitive: true,
@@ -131,8 +135,7 @@ class ConfigService {
                             handler.emit("CONNECTION_ERROR", { titles, msg: "Export password is required" });
                             return;
                         }
-                        const now = new Date();
-                        const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`;
+                        const ts = createExportTimestamp();
                         vscode.window
                             .showSaveDialog({
                                 defaultUri: vscode.Uri.file(`sshtools_${ts}.json`),

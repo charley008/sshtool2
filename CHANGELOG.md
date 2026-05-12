@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.3 - 2026-05-12
+
+- Added SSH HostKey fingerprint recording and change warning.
+- Added WebView message allow-list checks and CSP hardening.
+- Added safer path/name validation for SSH and FTP file operations.
+
 ## 2.1.2 - 2026-05-12
 
 - Moved saved SSH credentials into VS Code SecretStorage.

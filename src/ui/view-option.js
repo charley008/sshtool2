@@ -5,7 +5,7 @@ const path = require("path");
 const vscode = require("vscode");
 const { EventEmitter } = require("events");
 const { Console } = require("./console.js");
-const { normalizeWebviewMessage } = require("../utils/message-guard.js");
+const { isAllowedWebviewType, normalizeWebviewMessage } = require("../utils/message-guard.js");
 
 class ViewOption {
     constructor() {
@@ -141,6 +141,10 @@ class ViewManager {
                         Console.log("[WEBVIEW_ERROR] Ignored malformed webview message");
                         return;
                     }
+                    if (!isAllowedWebviewType(message.type)) {
+                        Console.log(`[WEBVIEW_ERROR] Ignored disallowed webview message: ${message.type}`);
+                        return;
+                    }
                     if (message && message.type === "WEBVIEW_ERROR") {
                         const detail = message.content && message.content.detail ? message.content.detail : "Unknown webview error";
                         Console.log(`[WEBVIEW_ERROR] ${detail}`);
@@ -177,7 +181,19 @@ class ViewManager {
 
     static buildPath(data, webview, contextPath) {
         const baseUri = webview.asWebviewUri(vscode.Uri.file(contextPath)).toString();
-        return data.replace(/((src|href)=("|'))(.+?\.(css|js))\b/gi, `$1${baseUri}/$4`);
+        const nonce = Math.random().toString(36).slice(2) + Date.now().toString(36);
+        const csp = [
+            "default-src 'none'",
+            `img-src ${webview.cspSource} data:`,
+            `script-src 'nonce-${nonce}' 'unsafe-eval'`,
+            "style-src 'unsafe-inline'",
+            `font-src ${webview.cspSource} data:`,
+            `connect-src ${webview.cspSource}`,
+        ].join("; ");
+        return data
+            .replace(/<head>/i, `<head><meta http-equiv="Content-Security-Policy" content="${csp}">`)
+            .replace(/<script\b(?![^>]*\bnonce=)/gi, `<script nonce="${nonce}"`)
+            .replace(/((src|href)=("|'))(.+?\.(css|js))\b/gi, `$1${baseUri}/$4`);
     }
 }
 

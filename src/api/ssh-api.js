@@ -23,6 +23,7 @@ const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
 const { Storage } = require("../storage/storage.js");
 const { Util } = require("../utils/util.js");
+const { joinRemotePath, validateLocalSavePath, validateRemoteName, validateRemoteOperationPath } = require("../utils/path-guard.js");
 const { Settings } = require("../utils/settings.js");
 const Localize = require("../ui/localize.js").default;
 const fileManager_1 = require("../utils/file-manager.js");
@@ -126,15 +127,22 @@ class SSHAPI {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.rename.title", filename), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
-            if (input) {
-                const rt = yield SSHConn.rename(that.info.ssh, that.fullPath, that.parentName + "/" + input);
+            const nameCheck = validateRemoteName(input);
+            if (nameCheck.ok) {
+                const targetPath = joinRemotePath(that.parentName, nameCheck.value);
+                const pathCheck = validateRemoteOperationPath(targetPath);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
+                const rt = yield SSHConn.rename(that.info.ssh, that.fullPath, pathCheck.value);
                 if (rt) {
                     API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.rename.ok", filename, input));
+                    Console.info((0, Localize)("xplot.msg.api.file.rename.ok", filename, nameCheck.value));
                 }
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.file.rename.no", filename));
+                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.rename.no", filename));
             }
         }));
     }
@@ -143,7 +151,8 @@ class SSHAPI {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
-            if (input) {
+            const nameCheck = validateRemoteName(input);
+            if (nameCheck.ok) {
                 const sshInfo = that.info.ssh;
                 const ssh = sshInfo.ssh;
                 if (sshInfo.id === that.id) {
@@ -155,17 +164,22 @@ class SSHAPI {
                 // 处理windows 盘符特殊字符转换  
                 fullPath = Util.replace(that.fullPath);
                 // }
-                const targetPath = fullPath + "/" + input;
-                const targetPath1 = that.fullPath + "/" + input;
+                const targetPath = joinRemotePath(fullPath, nameCheck.value);
+                const targetPath1 = joinRemotePath(that.fullPath, nameCheck.value);
+                const pathCheck = validateRemoteOperationPath(targetPath1);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
                 const tempPath = yield fileManager_1.FileManager.record(`temp/${keyDir}` + targetPath, "", fileManager_1.FileModel.WRITE);
-                const rt = yield SSHConn.put(sshInfo, tempPath, targetPath1);
+                const rt = yield SSHConn.put(sshInfo, tempPath, pathCheck.value);
                 if (rt) {
                     API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.new.yes", input));
+                    Console.info((0, Localize)("xplot.msg.api.file.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.file.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.new.no"));
             }
         }));
     }
@@ -180,15 +194,20 @@ class SSHAPI {
         }
         vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
             if (str == (0, Localize)("xplot.yes")) {
+                const pathCheck = validateRemoteOperationPath(that.fullPath);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
                 if (that.contextValue == constant_1.NodeType.SSH_FOLDER) {
-                    const rt = yield SSHConn.rmdir(that.info.ssh, that.fullPath);
+                    const rt = yield SSHConn.rmdir(that.info.ssh, pathCheck.value);
                     if (rt) {
                         API.refresh();
                         Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
                     }
                 }
                 else if (that.contextValue == constant_1.NodeType.SSH_FILE) {
-                    const rt = yield SSHConn.delete(that.info.ssh, that.fullPath);
+                    const rt = yield SSHConn.delete(that.info.ssh, pathCheck.value);
                     if (rt) {
                         API.refresh();
                         Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
@@ -318,6 +337,11 @@ class SSHAPI {
             vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
+                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
+                    if (!remoteCheck.ok) {
+                        Console.warn(remoteCheck.message);
+                        return;
+                    }
                     const { sftp } = yield SSHConn.get(that.info.ssh);
                     var progressStream = require("../utils/progress-stream.js");
                     let filename = that.contextValue == constant_1.NodeType.SSH_WORKSPACE ? that.workSpace.name : that.file.filename;
@@ -329,6 +353,13 @@ class SSHAPI {
                     else {
                         dpath = uri[0].path + "/" + filename;
                     }
+                    const basePath = uri[0].fsPath || uri[0].path;
+                    const saveCheck = validateLocalSavePath(dpath, basePath);
+                    if (!saveCheck.ok) {
+                        Console.warn(saveCheck.message);
+                        return;
+                    }
+                    dpath = saveCheck.value;
                     //若是目录存在，创建新目录
                     if (!fs.existsSync(dpath)) {
                         fs.mkdirpSync(dpath);
@@ -403,6 +434,12 @@ class SSHAPI {
             vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.filename), filters: { "Type": [extName] }, saveLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
+                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
+                    const saveCheck = validateLocalSavePath(uri.fsPath);
+                    if (!remoteCheck.ok || !saveCheck.ok) {
+                        Console.warn((remoteCheck.message || saveCheck.message));
+                        return;
+                    }
                     const { sftp } = yield SSHConn.get(that.info.ssh);
                     var progressStream = require("../utils/progress-stream.js");
                     vscode.window.withProgress({
@@ -435,7 +472,7 @@ class SSHAPI {
                                 str.on("error", err => {
                                     Console.err(err);
                                 });
-                                const outStream = (0, fs_1.createWriteStream)(uri.fsPath);
+                                const outStream = (0, fs_1.createWriteStream)(saveCheck.value);
                                 fileReadStream.pipe(str).pipe(outStream);
                                 token.onCancellationRequested(() => {
                                     fileReadStream.destroy();
@@ -454,20 +491,27 @@ class SSHAPI {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
-            if (input) {
+            const nameCheck = validateRemoteName(input);
+            if (nameCheck.ok) {
                 const sshInfo = that.info.ssh;
                 const ssh = sshInfo.ssh;
                 if (sshInfo.id === that.id) {
                     that.fullPath = "";
                 }
-                const rt = yield SSHConn.mkdir(sshInfo, that.fullPath + "/" + input);
+                const targetPath = joinRemotePath(that.fullPath, nameCheck.value);
+                const pathCheck = validateRemoteOperationPath(targetPath);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
+                const rt = yield SSHConn.mkdir(sshInfo, pathCheck.value);
                 if (rt) {
                     API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.folder.new.yes", input));
+                    Console.info((0, Localize)("xplot.msg.api.folder.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.folder.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.folder.new.no"));
             }
         }));
     }
@@ -483,6 +527,12 @@ class SSHAPI {
                 for (const item of uri) {
                     curr_url_index += 1;
                     const targetPath = item.fsPath;
+                    const targetRemotePath = joinRemotePath(that.fullPath, path.basename(targetPath));
+                    const pathCheck = validateRemoteOperationPath(targetRemotePath);
+                    if (!pathCheck.ok) {
+                        Console.warn(pathCheck.message);
+                        continue;
+                    }
                     yield vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
                         title: (0, Localize)("xplot.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
@@ -513,7 +563,7 @@ class SSHAPI {
                                 str.on("error", err => {
                                     Console.err(err);
                                 });
-                                const outStream = sftp.createWriteStream(that.fullPath + "/" + path.basename(targetPath));
+                                const outStream = sftp.createWriteStream(pathCheck.value);
                                 fileReadStream.pipe(str).pipe(outStream);
                                 token.onCancellationRequested(() => {
                                     fileReadStream.destroy();

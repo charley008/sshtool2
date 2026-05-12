@@ -11,3 +11,4 @@ exports["config-service"] = require("./config-service.js");
 exports["credential-service"] = require("./credential-service.js");
 exports["ssh-credential-service"] = require("./ssh-credential-service.js");
 exports["ftp-credential-service"] = require("./ftp-credential-service.js");
+exports["ssh-hostkey-service"] = require("./ssh-hostkey-service.js");

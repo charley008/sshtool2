@@ -28,9 +28,46 @@ function isAllowedType(type, allowList) {
     return allowList.has(type);
 }
 
+const WEBVIEW_ALLOWED_MESSAGE_TYPES = createTypeAllowList([
+    "init",
+    "new",
+    "load",
+    "insert",
+    "edit",
+    "delete",
+    "start",
+    "shutdown",
+    "data",
+    "resize",
+    "openLink",
+    "openLog",
+    "initTerminal",
+    "WEBVIEW_ERROR",
+    "CONNECT_SSH_INFO_CONNECT",
+    "CONNECT_SSH_INFO_SAVE",
+    "CONNECT_SSH_INFO_REFRESH",
+    "CONNECT_FTP_INFO_CONNECT",
+    "CONNECT_FTP_INFO_SAVE",
+    "EXPORT_CONFIGS",
+    "EXPORT_JSON_CONFIGS",
+    "IMPORT_FILE_CONFIGS",
+]);
+
+function isAllowedWebviewType(type) {
+    if (typeof type !== "string") {
+        return false;
+    }
+    if (/^route-[A-Za-z0-9_-]+$/.test(type)) {
+        return true;
+    }
+    return isAllowedType(type, WEBVIEW_ALLOWED_MESSAGE_TYPES);
+}
+
 module.exports = {
     createTypeAllowList,
+    isAllowedWebviewType,
     isAllowedType,
     isValidMessageType,
     normalizeWebviewMessage,
+    WEBVIEW_ALLOWED_MESSAGE_TYPES,
 };

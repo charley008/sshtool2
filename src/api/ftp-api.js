@@ -23,6 +23,7 @@ const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
 const { Storage } = require("../storage/storage.js");
 const { Util } = require("../utils/util.js");
+const { joinRemotePath, validateLocalSavePath, validateRemoteName, validateRemoteOperationPath } = require("../utils/path-guard.js");
 const { Settings } = require("../utils/settings.js");
 const Localize = require("../ui/localize.js").default;
 const fileManager_1 = require("../utils/file-manager.js");
@@ -71,17 +72,23 @@ class FTPAPI {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.rename.title", filename), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
-            if (input) {
+            const nameCheck = validateRemoteName(input);
+            if (nameCheck.ok) {
                 const old_name = that.fullPath;
-                const new_name = that.parentName + "/" + input;
-                const flag = yield FTPConn.rename(that.info.ftp, old_name, new_name);
+                const new_name = joinRemotePath(that.parentName, nameCheck.value);
+                const pathCheck = validateRemoteOperationPath(new_name);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
+                const flag = yield FTPConn.rename(that.info.ftp, old_name, pathCheck.value);
                 if (flag) {
                     _core.API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.rename.ok", filename, input));
+                    Console.info((0, Localize)("xplot.msg.api.file.rename.ok", filename, nameCheck.value));
                 }
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.file.rename.no", filename));
+                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.rename.no", filename));
             }
         }));
     }
@@ -90,7 +97,8 @@ class FTPAPI {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
-            if (input) {
+            const nameCheck = validateRemoteName(input);
+            if (nameCheck.ok) {
                 const infovo = that.info;
                 const ftpInfo = infovo.ftp;
                 if (ftpInfo.id === that.id) {
@@ -102,17 +110,22 @@ class FTPAPI {
                 // 处理windows 盘符特殊字符转换  
                 fullPath = Util.replace(that.fullPath);
                 // }
-                const targetPath = fullPath + "/" + input;
-                const targetPath1 = that.fullPath + "/" + input;
+                const targetPath = joinRemotePath(fullPath, nameCheck.value);
+                const targetPath1 = joinRemotePath(that.fullPath, nameCheck.value);
+                const pathCheck = validateRemoteOperationPath(targetPath1);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
                 const tempPath = yield fileManager_1.FileManager.record(`temp/${keyDir}` + targetPath, "", fileManager_1.FileModel.WRITE);
-                const rt = yield FTPConn.put(ftpInfo, tempPath, targetPath1);
+                const rt = yield FTPConn.put(ftpInfo, tempPath, pathCheck.value);
                 if (rt) {
                     _core.API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.new.yes", input));
+                    Console.info((0, Localize)("xplot.msg.api.file.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.file.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.new.no"));
             }
         }));
     }
@@ -121,15 +134,20 @@ class FTPAPI {
         let filename = that.file.name;
         vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
             if (str == (0, Localize)("xplot.yes")) {
+                const pathCheck = validateRemoteOperationPath(that.fullPath);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
                 if (that.contextValue == constant_1.NodeType.FTP_FOLDER) {
-                    const rt = yield FTPConn.rmdir(that.info.ftp, that.fullPath);
+                    const rt = yield FTPConn.rmdir(that.info.ftp, pathCheck.value);
                     if (rt) {
                         _core.API.refresh();
                         Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
                     }
                 }
                 else if (that.contextValue == constant_1.NodeType.FTP_FILE) {
-                    const rt = yield FTPConn.delete(that.info.ftp, that.fullPath);
+                    const rt = yield FTPConn.delete(that.info.ftp, pathCheck.value);
                     if (rt) {
                         _core.API.refresh();
                         Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
@@ -281,6 +299,11 @@ class FTPAPI {
             vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
+                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
+                    if (!remoteCheck.ok) {
+                        Console.warn(remoteCheck.message);
+                        return;
+                    }
                     const { client } = yield FTPConn.get(that.info.ftp);
                     var progressStream = require("../utils/progress-stream.js");
                     let filename = that.contextValue == constant_1.NodeType.FTP_WORKSPACE ? that.workSpace.name : that.file.name;
@@ -292,6 +315,13 @@ class FTPAPI {
                     else {
                         dpath = uri[0].path + "/" + filename;
                     }
+                    const basePath = uri[0].fsPath || uri[0].path;
+                    const saveCheck = validateLocalSavePath(dpath, basePath);
+                    if (!saveCheck.ok) {
+                        Console.warn(saveCheck.message);
+                        return;
+                    }
+                    dpath = saveCheck.value;
                     //若是目录存在，创建新目录
                     if (!fs.existsSync(dpath)) {
                         fs.mkdirpSync(dpath);
@@ -368,6 +398,12 @@ class FTPAPI {
             vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.name), filters: { "Type": [extName] }, saveLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
+                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
+                    const saveCheck = validateLocalSavePath(uri.fsPath);
+                    if (!remoteCheck.ok || !saveCheck.ok) {
+                        Console.warn((remoteCheck.message || saveCheck.message));
+                        return;
+                    }
                     const { client } = yield FTPConn.get(that.info.ftp);
                     var progressStream = require("../utils/progress-stream.js");
                     vscode.window.withProgress({
@@ -401,7 +437,7 @@ class FTPAPI {
                                     str.on("error", err => {
                                         Console.err(err);
                                     });
-                                    const outStream = (0, createWriteStream)(uri.fsPath);
+                                    const outStream = (0, createWriteStream)(saveCheck.value);
                                     fileReadStream.pipe(str).pipe(outStream);
                                     token.onCancellationRequested(() => {
                                         fileReadStream.destroy();
@@ -421,19 +457,26 @@ class FTPAPI {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
-            if (input) {
+            const nameCheck = validateRemoteName(input);
+            if (nameCheck.ok) {
                 const ftpInfo = that.info.ftp;
                 if (ftpInfo.id === that.id) {
                     that.fullPath = "";
                 }
-                const rt = yield FTPConn.mkdir(ftpInfo, that.fullPath + "/" + input);
+                const targetPath = joinRemotePath(that.fullPath, nameCheck.value);
+                const pathCheck = validateRemoteOperationPath(targetPath);
+                if (!pathCheck.ok) {
+                    Console.warn(pathCheck.message);
+                    return;
+                }
+                const rt = yield FTPConn.mkdir(ftpInfo, pathCheck.value);
                 if (rt) {
                     _core.API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.folder.new.yes", input));
+                    Console.info((0, Localize)("xplot.msg.api.folder.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.folder.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.folder.new.no"));
             }
         }));
     }
@@ -447,6 +490,12 @@ class FTPAPI {
                 for (const item of uri) {
                     curr_url_index += 1;
                     const targetPath = item.fsPath;
+                    const targetRemotePath = joinRemotePath(that.fullPath, path.basename(targetPath));
+                    const pathCheck = validateRemoteOperationPath(targetRemotePath);
+                    if (!pathCheck.ok) {
+                        Console.warn(pathCheck.message);
+                        continue;
+                    }
                     yield vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
                         title: (0, Localize)("xplot.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
@@ -454,7 +503,7 @@ class FTPAPI {
                     }, (progress, token) => {
                         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
                             const begin_time = new Date().getTime();
-                            const rt = yield FTPConn.put(that.info.ftp, targetPath, that.fullPath + "/" + path.basename(targetPath));
+                            const rt = yield FTPConn.put(that.info.ftp, targetPath, pathCheck.value);
                             const end_time = new Date().getTime();
                             const time = ((end_time - begin_time) / 1000).toFixed(2);
                             if (rt) {
