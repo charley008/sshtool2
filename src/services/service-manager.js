@@ -19,6 +19,7 @@ const { ForwardDT } = require("../storage/forward.js");
 const { RemoteDT } = require("../storage/remote.js");
 const { WorkspaceDT } = require("../storage/workspace.js");
 const { Settings } = require("../utils/settings.js");
+const { CredentialService } = require("./credential-service.js");
 class ServiceManager {
     constructor(context) {
         this.context = context;
@@ -34,6 +35,7 @@ class ServiceManager {
         ForwardDT.init(context);
         RemoteDT.init(context);
         WorkspaceDT.init(context);
+        CredentialService.init(context);
         // Verify inits
         if (!Storage.context) console.error('[SSH Tools] Storage.context not set after init!');
         if (!BaseDT.context) console.error('[SSH Tools] BaseDT.context not set after init!');

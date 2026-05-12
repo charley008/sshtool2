@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.1 - 2026-05-12
+
+- Added safe config export: normal `.db` / `.json` exports now omit passwords, private keys, and passphrases.
+- Added secure config export for `.db` / `.json` using a user-provided export password.
+- Added secure config import support while keeping compatibility with older `.db` exports.
+- Moved packaged VSIX output into `packages/` and kept generated packages out of the repository root.
+- Limited GitHub Actions packaging to version tags and manual runs.
+- Cleaned up low-risk legacy comments and added small shared utility wrappers for future security work.
+
 ## 2.1.0 - 2026-05-11
 
 - Added single-hop SSH jump host support for SSH/SFTP/terminal connections.

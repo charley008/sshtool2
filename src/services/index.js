@@ -8,3 +8,4 @@ exports["ssh-service"] = require("./ssh-service.js");
 exports["xterm-terminal"] = require("./xterm-terminal.js");
 exports["ftp-service"] = require("./ftp-service.js");
 exports["config-service"] = require("./config-service.js");
+exports["credential-service"] = require("./credential-service.js");

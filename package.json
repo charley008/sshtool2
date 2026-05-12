@@ -2,7 +2,7 @@
   "name": "sshtools",
   "displayName": "SSH Tools",
   "description": "XPLOT Tools for vscode;SSH,FTP,Remote",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "publisher": "XPLOT",
   "engines": {
     "vscode": "^1.85.0"
@@ -677,8 +677,8 @@
     "vscode:prepublish": "webpack --mode production",
     "build": "webpack --mode production",
     "recover:out": "node ../scripts/recover-out.js",
-    "package": "vsce package --no-dependencies --allow-star-activation",
-    "package:npx": "npx @vscode/vsce package --no-dependencies --no-yarn --allow-missing-repository",
+    "package": "node scripts/package-vsix.js",
+    "package:npx": "node scripts/package-vsix.js",
     "dev": "webpack --mode development"
   },
   "devDependencies": {

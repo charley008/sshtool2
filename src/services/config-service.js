@@ -14,6 +14,70 @@ const { ConfigVO } = require("../models/config-model.js");
 const { ViewManager } = require("../ui/view-option.js");
 
 class ConfigService {
+    async promptExportPassword() {
+        const password = await vscode.window.showInputBox({
+            prompt: "请输入导出密码；导入到另一台电脑时需要同一个密码",
+            password: true,
+            ignoreFocusOut: true,
+            validateInput: value => value && value.length >= 6 ? null : "导出密码至少 6 位",
+        });
+        if (password === undefined) {
+            return undefined;
+        }
+        const confirm = await vscode.window.showInputBox({
+            prompt: "请再次输入导出密码",
+            password: true,
+            ignoreFocusOut: true,
+        });
+        if (confirm === undefined) {
+            return undefined;
+        }
+        if (password !== confirm) {
+            vscode.window.showWarningMessage("两次输入的导出密码不一致");
+            return undefined;
+        }
+        return password;
+    }
+
+    async promptImportPassword() {
+        return vscode.window.showInputBox({
+            prompt: "该配置文件包含加密敏感信息，请输入导出密码",
+            password: true,
+            ignoreFocusOut: true,
+        });
+    }
+
+    async importConfigFile(filePath) {
+        try {
+            return _cfg.ConfigAPI.import(filePath);
+        } catch (error) {
+            if (!error || error.message !== "Export password is required") {
+                throw error;
+            }
+            const password = await this.promptImportPassword();
+            if (password === undefined) {
+                throw new Error("Import cancelled");
+            }
+            return _cfg.ConfigAPI.import(filePath, { password });
+        }
+    }
+
+    async importConfigValue(value) {
+        const data = JSON.stringify(value || {});
+        try {
+            return _cfg.ConfigAPI.parse_import_data(data, "json");
+        } catch (error) {
+            if (!error || error.message !== "Export password is required") {
+                throw error;
+            }
+            const password = await this.promptImportPassword();
+            if (password === undefined) {
+                throw new Error("Import cancelled");
+            }
+            return _cfg.ConfigAPI.parse_import_data(data, "json", { password });
+        }
+    }
+
     createConfigView() {
         ViewManager.createWebviewPanel({
             iconPath: _utl.Util.getExtPath("resources", "images", "icons", "config.svg"),
@@ -57,11 +121,34 @@ class ConfigService {
                             })
                             .then((uri) => {
                                 if (uri && uri[0]) {
-                                    _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
+                                    const filePath = _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
                                         mode: false,
                                         ids: content.configvos_key,
                                     });
-                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + uri[0].fsPath);
+                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
+                                }
+                            });
+                    })
+                    .on("EXPORT_SECURE_CONFIGS", async (content) => {
+                        const password = await this.promptExportPassword();
+                        if (password === undefined) return;
+                        vscode.window
+                            .showOpenDialog({
+                                canSelectFiles: false,
+                                canSelectMany: false,
+                                canSelectFolders: true,
+                                defaultUri: vscode.Uri.file(os.homedir()),
+                                openLabel: Localize("xplot.msg.export.select.folder"),
+                            })
+                            .then((uri) => {
+                                if (uri && uri[0]) {
+                                    const filePath = _cfg.ConfigAPI.export(uri[0].fsPath || uri[0].path, {
+                                        mode: false,
+                                        ids: content.configvos_key,
+                                        includeSensitive: true,
+                                        password,
+                                    });
+                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
                                 }
                             });
                     })
@@ -75,9 +162,35 @@ class ConfigService {
                             })
                             .then((uri) => {
                                 if (uri) {
-                                    const fs = require("fs");
-                                    fs.writeFileSync(uri.fsPath, JSON.stringify(content.configvos, null, 2), 'utf-8');
-                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + uri.fsPath);
+                                    const filePath = _cfg.ConfigAPI.export_to_file(uri.fsPath, {
+                                        mode: false,
+                                        ids: content.configvos_key,
+                                        plainJson: true,
+                                    });
+                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
+                                }
+                            });
+                    })
+                    .on("EXPORT_SECURE_JSON_CONFIGS", async (content) => {
+                        const password = await this.promptExportPassword();
+                        if (password === undefined) return;
+                        const now = new Date();
+                        const ts = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}_${String(now.getHours()).padStart(2,'0')}.${String(now.getMinutes()).padStart(2,'0')}.${String(now.getSeconds()).padStart(2,'0')}`;
+                        vscode.window
+                            .showSaveDialog({
+                                defaultUri: vscode.Uri.file(`sshtools_secure_${ts}.json`),
+                                filters: { 'JSON Files': ['json'] },
+                            })
+                            .then((uri) => {
+                                if (uri) {
+                                    const filePath = _cfg.ConfigAPI.export_to_file(uri.fsPath, {
+                                        mode: false,
+                                        ids: content.configvos_key,
+                                        includeSensitive: true,
+                                        password,
+                                        plainJson: true,
+                                    });
+                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
                                 }
                             });
                     })
@@ -87,13 +200,13 @@ class ConfigService {
                                 canSelectFiles: true,
                                 canSelectMany: false,
                                 canSelectFolders: false,
-                                filters: { Database: ["db"] },
+                                filters: { "SSH Tools Config": ["db", "json"] },
                                 openLabel: Localize("xplot.msg.import.select.file"),
                             })
-                            .then((uri) => {
+                            .then(async (uri) => {
                                 if (uri && uri[0]) {
                                     try {
-                                        const configvos = _cfg.ConfigAPI.import(uri[0].fsPath || uri[0].path);
+                                        const configvos = await this.importConfigFile(uri[0].fsPath || uri[0].path);
                                         _cfg.ConfigAPI.import_configvos(configvos);
                                         _core.API.refresh();
                                         const count = Object.keys(configvos || {}).length;
@@ -107,9 +220,9 @@ class ConfigService {
                                 }
                             });
                     })
-                    .on("IMPORT_CONFIGS_TO_SAVE", (content) => {
+                    .on("IMPORT_CONFIGS_TO_SAVE", async (content) => {
                         try {
-                            const configvos = content.configvos;
+                            const configvos = await this.importConfigValue(content.configvos);
                             _cfg.ConfigAPI.import_configvos(configvos);
                             _core.API.refresh();
                             handler.emit("IMPORT", { configvos, titles });

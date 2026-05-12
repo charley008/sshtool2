@@ -37,7 +37,7 @@ jobs:
         id: vsix
         shell: bash
         run: |
-          file="$(ls -1 *.vsix | head -n 1)"
+          file="$(ls -1 packages/*.vsix | head -n 1)"
           echo "file=$file" >> "$GITHUB_OUTPUT"
           echo "Built $file"
 

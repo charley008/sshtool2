@@ -5,6 +5,7 @@ const path = require("path");
 const vscode = require("vscode");
 const { EventEmitter } = require("events");
 const { Console } = require("./console.js");
+const { normalizeWebviewMessage } = require("../utils/message-guard.js");
 
 class ViewOption {
     constructor() {
@@ -31,8 +32,14 @@ class Hanlder {
     }
 }
 
+const Handler = Hanlder;
+
 class ViewManager {
     static initExtesnsionPath(extensionPath) {
+        this.initExtensionPath(extensionPath);
+    }
+
+    static initExtensionPath(extensionPath) {
         this.webviewPath = path.join(extensionPath, "out", "webview");
     }
 
@@ -128,7 +135,12 @@ class ViewManager {
                     viewOption.eventHandler(new Hanlder(webviewPanel, newStatus.eventEmitter));
                 }
 
-                webviewPanel.webview.onDidReceiveMessage((message) => {
+                webviewPanel.webview.onDidReceiveMessage((rawMessage) => {
+                    const message = normalizeWebviewMessage(rawMessage);
+                    if (!message) {
+                        Console.log("[WEBVIEW_ERROR] Ignored malformed webview message");
+                        return;
+                    }
                     if (message && message.type === "WEBVIEW_ERROR") {
                         const detail = message.content && message.content.detail ? message.content.detail : "Unknown webview error";
                         Console.log(`[WEBVIEW_ERROR] ${detail}`);
@@ -172,5 +184,6 @@ class ViewManager {
 ViewManager.viewStatu = {};
 
 exports.ViewOption = ViewOption;
+exports.Handler = Handler;
 exports.Hanlder = Hanlder;
 exports.ViewManager = ViewManager;

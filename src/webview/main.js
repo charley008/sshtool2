@@ -610,18 +610,27 @@ const ConfigPage = defineComponent({
         ElMessage.error(error.message);
       }
     };
-    const exportConfigs = () => bus.emit("EXPORT_CONFIGS", { configvos_key: clone(selectedKeys.value) });
-    const exportJSON = () => {
-      const selected = {};
-      const keys = selectedKeys.value || [];
-      const src = configvos.value || {};
-      for (const key of keys) {
-        if (src[key]) selected[key] = JSON.parse(JSON.stringify(toRaw(src[key])));
+    const ensureSelection = () => {
+      if (!selectedKeys.value.length) {
+        ElMessage.warning("请先选择要导出的配置");
+        return false;
       }
-      if (Object.keys(selected).length === 0) { ElMessage.warning("请先选择要导出的配置"); return; }
-      bus.emit("EXPORT_JSON_CONFIGS", { configvos: selected });
+      return true;
     };
-    return { configvos, configRows, selectedKeys, allKeys, isAllSelected, toggleAll, getConfigLabel, importText, saveImport, exportConfigs, exportJSON, bus };
+    const selectedKeyPayload = () => ({ configvos_key: clone(selectedKeys.value) });
+    const exportConfigs = () => {
+      if (ensureSelection()) bus.emit("EXPORT_CONFIGS", selectedKeyPayload());
+    };
+    const exportSecureConfigs = () => {
+      if (ensureSelection()) bus.emit("EXPORT_SECURE_CONFIGS", selectedKeyPayload());
+    };
+    const exportJSON = () => {
+      if (ensureSelection()) bus.emit("EXPORT_JSON_CONFIGS", selectedKeyPayload());
+    };
+    const exportSecureJSON = () => {
+      if (ensureSelection()) bus.emit("EXPORT_SECURE_JSON_CONFIGS", selectedKeyPayload());
+    };
+    return { configvos, configRows, selectedKeys, allKeys, isAllSelected, toggleAll, getConfigLabel, importText, saveImport, exportConfigs, exportSecureConfigs, exportJSON, exportSecureJSON, bus };
   },
   template: `
     <main class="page">
@@ -644,12 +653,14 @@ const ConfigPage = defineComponent({
         <p class="muted" v-else style="margin:0;">暂无连接配置</p>
         <div class="actions" style="margin-top:16px;">
           <el-button type="primary" @click="exportConfigs">导出数据库 (.db)</el-button>
+          <el-button @click="exportSecureConfigs">安全导出数据库 (.db)</el-button>
           <el-button @click="exportJSON">导出 JSON (.json)</el-button>
+          <el-button @click="exportSecureJSON">安全导出 JSON (.json)</el-button>
         </div>
       </section>
       <section class="panel">
         <h3 style="margin:0 0 8px; font-size:14px;">导入配置</h3>
-        <p class="muted" style="margin:0 0 12px; font-size:12px;">支持 .db 数据库文件，或直接粘贴 JSON 配置</p>
+        <p class="muted" style="margin:0 0 12px; font-size:12px;">支持 .db / .json 配置文件，或直接粘贴 JSON 配置</p>
         <div class="actions" style="margin-top:0; margin-bottom:12px;">
           <el-button @click="bus.emit('IMPORT_FILE_CONFIGS')">从文件导入</el-button>
         </div>

@@ -24,3 +24,6 @@ exports["async-dll"] = require("./async-dll.js");
 exports["through-runtime"] = require("./through-runtime.js");
 exports["speedometer-runtime"] = require("./speedometer-runtime.js");
 exports["debug-runtime"] = require("./debug-runtime.js");
+exports["sensitive-fields"] = require("./sensitive-fields.js");
+exports["message-guard"] = require("./message-guard.js");
+exports["config-security"] = require("./config-security.js");

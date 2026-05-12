@@ -2,7 +2,6 @@
 // Recovered module id: 58
 "use strict";
 
-const os = require("os");
 const fs = require("../utils/fs-extra-runtime.js");
 const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
@@ -11,12 +10,67 @@ const Localize = require("../ui/localize.js").default;
 const { SSHVO } = require("../models/ssh-model.js");
 const { ConfigService } = require("../services/config-service.js");
 const { ConfigVO } = require("../models/config-model.js");
+const { createEncryptedExport, decryptExport, isEncryptedExport } = require("../utils/config-security.js");
+const { omitSensitive } = require("../utils/sensitive-fields.js");
 const _ftp = require("./ftp-api.js");
 const { FTPVO } = require("../models/ftp-model.js");
 const _ssh = require("./ssh-api.js");
 const _core = require("./core-api.js");
+
 class ConfigAPI {
-    //从剪切板导入主机信息
+    static is_current_config_map(value) {
+        if (!value || typeof value !== "object" || Array.isArray(value)) {
+            return false;
+        }
+        return Object.keys(value).some((key) => {
+            const item = value[key];
+            return item && typeof item === "object" && (item.type === constant_1.Type.SSH || item.type === constant_1.Type.FTP);
+        });
+    }
+
+    static get_configvos(option = {}) {
+        let configvos = {};
+        if (option.mode) {
+            configvos = ConfigVO.getAll();
+        } else {
+            const ids = option.ids || [];
+            for (let i in ids) {
+                const id = ids[i];
+                const configvo = ConfigVO.get(id);
+                if (configvo) {
+                    configvos[id] = configvo;
+                }
+            }
+        }
+        return configvos;
+    }
+
+    static parse_import_data(data, fileExt, option = {}) {
+        let parsed;
+        try {
+            parsed = JSON.parse(data);
+        } catch (_) {
+            parsed = null;
+        }
+
+        if (isEncryptedExport(parsed)) {
+            return decryptExport(parsed, option.password);
+        }
+
+        if ("key" == fileExt || "db" == fileExt) {
+            data = Util.deSign(data);
+        }
+
+        parsed = JSON.parse(data);
+        if (isEncryptedExport(parsed)) {
+            return decryptExport(parsed, option.password);
+        }
+        if ("db" == fileExt || ConfigAPI.is_current_config_map(parsed)) {
+            return parsed;
+        }
+        return Util.configs_old_2_new(parsed);
+    }
+
     static clipboard_import_configvo() {
         try {
             Util.ClipBoardToText().then(text => {
@@ -31,23 +85,19 @@ class ConfigAPI {
                         ConfigAPI.import_configvo(info_text);
                         _core.API.refresh();
                     });
-                }
-                else {
+                } else {
                     Console.warn((0, Localize)("xplot.msg.import.err.null"));
                 }
             });
-        }
-        catch (e) {
+        } catch (e) {
             Console.warn((0, Localize)("xplot.msg.import.err.design"));
             throw e;
         }
     }
-    // 解析text 将其导入到系统配置
+
     static import_configvo(data) {
         try {
-            // 解密
             data = Util.deSign(data);
-            // parse JSON object
             const configvo = JSON.parse(data);
             if (configvo.type == constant_1.Type.SSH) {
                 const sshvos = configvo.sshvo;
@@ -57,12 +107,12 @@ class ConfigAPI {
                 const ftpvo = configvo.ftpvo;
                 _ftp.FTPAPI.import_ftpvo(ftpvo);
             }
-        }
-        catch (e) {
+        } catch (e) {
             Console.warn((0, Localize)("xplot.msg.import.err.design"));
             throw e;
         }
     }
+
     static import_configvos(configvos) {
         try {
             for (let id in configvos) {
@@ -76,75 +126,66 @@ class ConfigAPI {
                     _ftp.FTPAPI.import_ftpvo(ftpvo);
                 }
             }
-        }
-        catch (e) {
+        } catch (e) {
             Console.warn((0, Localize)("xplot.msg.import.err.design"));
             throw e;
         }
     }
-    // 处理配置文件导入
-    static import(path) {
+
+    static import(path, option = {}) {
         if (path.startsWith('/') && path[2] === ':') {
             path = path.substr(1);
         }
-        let data = fs.readFileSync(path, 'utf-8');
+        const data = fs.readFileSync(path, 'utf-8');
         const fileExt = path.substring(path.lastIndexOf('.') + 1);
         try {
-            if ("key" == fileExt || "db" == fileExt) {
-                // 解密
-                data = Util.deSign(data);
-            }
-            // parse JSON object
-            const dt = JSON.parse(data);
-            let configvos = {};
-            if ("db" == fileExt) {
-                configvos = dt;
-            }
-            else {
-                configvos = Util.configs_old_2_new(dt);
-            }
-            return configvos;
-        }
-        catch (e) {
+            return ConfigAPI.parse_import_data(data, fileExt, option);
+        } catch (e) {
             Console.warn((0, Localize)("xplot.msg.import.err.design"));
             throw e;
         }
     }
-    // 配置文件导出
-    static export(path, option) {
-        let configvos = {};
-        if (option.mode) {
-            configvos = ConfigVO.getAll();
-        }
-        else {
-            const ids = option.ids;
-            for (let i in ids) {
-                const id = ids[i];
-                configvos[id] = ConfigVO.get(id);
-            }
-        }
-        // convert JSON object to string
-        let data = JSON.stringify(configvos, null, 4);
-        // 加密
-        data = Util.genSign(data);
-        // Fix path: VS Code URIs on Windows may have leading / like /c:/Users/...
+
+    static export(path, option = {}) {
         if (path.startsWith('/') && path[2] === ':') {
             path = path.substr(1);
         }
         const dtime = Util.formatDate().replace(/:/gi, ".");
-        const dirFile = `${path}/sshtools_${dtime}.db`;
-        fs.writeFileSync(dirFile, data);
-        // vscode.commands.executeCommand('vscode.open', vscode.Uri.file(dirFile));
-        Console.info(`${(0, Localize)("xplot.msg.export.ok")}${dirFile}`);
+        const ext = option.plainJson ? "json" : "db";
+        const dirFile = `${path}/sshtools_${dtime}.${ext}`;
+        ConfigAPI.export_to_file(dirFile, option);
+        return dirFile;
     }
-    // 清空配置文件
+
+    static export_to_file(filePath, option = {}) {
+        let configvos = ConfigAPI.get_configvos(option);
+        if (option.includeSensitive) {
+            configvos = createEncryptedExport(configvos, option.password);
+        } else {
+            configvos = omitSensitive(configvos);
+        }
+
+        let data = JSON.stringify(configvos, null, 4);
+        if (!option.plainJson) {
+            data = Util.genSign(data);
+        }
+
+        if (filePath.startsWith('/') && filePath[2] === ':') {
+            filePath = filePath.substr(1);
+        }
+        fs.writeFileSync(filePath, data);
+        Console.info(`${(0, Localize)("xplot.msg.export.ok")}${filePath}`);
+        return filePath;
+    }
+
     static clear() {
         SSHVO.delAll();
         FTPVO.delAll();
     }
-    // 配置管理 处理config view页面事件
+
     static manager() {
         new ConfigService().createConfigView();
     }
 }
+
 exports.ConfigAPI = ConfigAPI;

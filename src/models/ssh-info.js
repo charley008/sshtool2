@@ -14,28 +14,7 @@ class SSHInfo {
         this.ssh = ssh;
         this.description = description;
     }
-    // private sshDao = new SSHDAO();
-    // private forwardDao = new ForwardDAO();
-    // private workspaceDao = new WorkSpaceDAO();
-    // private remoteDao = new RemoteDAO();
-    // get(): SSHVO {
-    //     const forwards = this.forwardDao.selectBySSHId(this.id);
-    //     const workspaces = this.workspaceDao.selectBySSHId(this.id);
-    //     const remotes = this.remoteDao.selectBySSHId(this.id);
-    //     return new SSHVO(this,forwards,workspaces,remotes);
-    // }
-    // post(): boolean {
-    //     return this.sshDao.update(this);
-    // }
-    // put(): boolean {
-    //     return this.sshDao.insert(this);
-    // }
-    // del(): boolean {
-    //     this.forwardDao.deleteBySSHId(this.id);
-    //     this.workspaceDao.deleteBySSHId(this.id);
-    //     this.remoteDao.deleteBySSHId(this.id)
-    //     return this.sshDao.deleteById(this.id);
-    // }
+
     static New() {
         return new SSHInfo("default", "default", constant_1.SSHType.OFFLINE, new SSH('127.0.0.1', 22, 'root', constant_1.OSTypes.LINUX, null, null, null, null, { enabled: false, sshId: "" }), "");
     }
