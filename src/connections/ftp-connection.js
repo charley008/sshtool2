@@ -136,17 +136,30 @@ class FTPConn {
                 Console.info(`Timeout ${FTPVO.title(ftpInfo)}`);
                 this.closeFTP(ftpInfo);
             }, 8000);
-            const { client } = yield this.get(ftpInfo);
-            client.list(rforder, (err, list) => {
+            try {
+                const { client } = yield this.get(ftpInfo);
+                if (!client) {
+                    throw new Error("FTP client is not available");
+                }
+                client.list(rforder, (err, list) => {
+                    if (mark) {
+                        clearTimeout(mark);
+                        if (err) {
+                            Console.warn(`List ${FTPVO.title(ftpInfo)} ${rforder} failed: ${err.message || err}`);
+                            resolve(null);
+                            return;
+                        }
+                        resolve(list);
+                    }
+                });
+            }
+            catch (err) {
                 if (mark) {
                     clearTimeout(mark);
-                    if (err) {
-                        resolve(null);
-                        return;
-                    }
-                    resolve(list);
+                    Console.warn(`List ${FTPVO.title(ftpInfo)} ${rforder} failed: ${err.message || err}`);
+                    resolve(null);
                 }
-            });
+            }
         }));
     }
     static rmdir(ftpInfo, rforder) {

@@ -5,7 +5,7 @@
 const vscode = require("vscode");
 class Settings {
     static reload() {
-        const config = vscode.workspace.getConfiguration('XPLOTTools');
+        const config = vscode.workspace.getConfiguration('SSHTOOLTools');
         Settings.PingHostTime = config.get('default.PingHostTime');
         Settings.RefreshNodeTime = config.get('default.RefreshNodeTime');
         Settings.OpenFileMaxSize = config.get('default.OpenFileMaxSize');

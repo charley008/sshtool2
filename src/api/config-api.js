@@ -98,18 +98,18 @@ class ConfigAPI {
                 const info_text = arr[1];
                 const reg = /^(.)+_(.)+@(.)+:([1-9][0-9])+/;
                 const flag = reg.test(host_title);
-                Console.info((0, Localize)("xplot.msg.import.info.clipboard", host_title));
+                Console.info((0, Localize)("sshtool.msg.import.info.clipboard", host_title));
                 if (host_title && info_text && flag) {
-                    Util.confirm(`${(0, Localize)("xplot.msg.import.title")} ${host_title}?`, () => {
+                    Util.confirm(`${(0, Localize)("sshtool.msg.import.title")} ${host_title}?`, () => {
                         ConfigAPI.import_configvo(info_text);
                         _core.API.refresh();
                     });
                 } else {
-                    Console.warn((0, Localize)("xplot.msg.import.err.null"));
+                    Console.warn((0, Localize)("sshtool.msg.import.err.null"));
                 }
             });
         } catch (e) {
-            Console.warn((0, Localize)("xplot.msg.import.err.design"));
+            Console.warn((0, Localize)("sshtool.msg.import.err.design"));
             throw e;
         }
     }
@@ -127,7 +127,7 @@ class ConfigAPI {
                 _ftp.FTPAPI.import_ftpvo(ftpvo);
             }
         } catch (e) {
-            Console.warn((0, Localize)("xplot.msg.import.err.design"));
+            Console.warn((0, Localize)("sshtool.msg.import.err.design"));
             throw e;
         }
     }
@@ -146,7 +146,7 @@ class ConfigAPI {
                 }
             }
         } catch (e) {
-            Console.warn((0, Localize)("xplot.msg.import.err.design"));
+            Console.warn((0, Localize)("sshtool.msg.import.err.design"));
             throw e;
         }
     }
@@ -160,7 +160,7 @@ class ConfigAPI {
         try {
             return ConfigAPI.parse_import_data(data, fileExt, option);
         } catch (e) {
-            Console.warn((0, Localize)("xplot.msg.import.err.design"));
+            Console.warn((0, Localize)("sshtool.msg.import.err.design"));
             throw e;
         }
     }
@@ -193,7 +193,7 @@ class ConfigAPI {
             filePath = filePath.substr(1);
         }
         fs.writeFileSync(filePath, data);
-        Console.info(`${(0, Localize)("xplot.msg.export.ok")}${filePath}`);
+        Console.info(`${(0, Localize)("sshtool.msg.export.ok")}${filePath}`);
         return filePath;
     }
 

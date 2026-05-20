@@ -42,7 +42,7 @@ class GroupAPI {
             const group = groupvos[i];
             let qvo = new QuickPickItemVo();
             qvo.label = `${group.name}`;
-            qvo.detail = `${(0, Localize)("xplot.group.msg.list1.title", group.currGNSize == 0 ? '0' : group.currGNSize, group.onlineSize == 0 ? '0' : group.onlineSize, group.offlineSize == 0 ? '0' : group.offlineSize, group.workSpaceSize == 0 ? '0' : group.workSpaceSize)}`;
+            qvo.detail = `${(0, Localize)("sshtool.group.msg.list1.title", group.currGNSize == 0 ? '0' : group.currGNSize, group.onlineSize == 0 ? '0' : group.onlineSize, group.offlineSize == 0 ? '0' : group.offlineSize, group.workSpaceSize == 0 ? '0' : group.workSpaceSize)}`;
             qvoall_groupSize += 1;
             qvoall_onlineSize += group.onlineSize;
             qvoall_offlineSize += group.offlineSize;
@@ -50,9 +50,9 @@ class GroupAPI {
             qvoall_currGNsize += group.currGNSize;
             typeArr.push(qvo);
         }
-        qvoall.detail = `${(0, Localize)("xplot.group.msg.list2.title", qvoall_groupSize == 0 ? '0' : qvoall_groupSize, qvoall_currGNsize == 0 ? '0' : qvoall_currGNsize, qvoall_onlineSize == 0 ? '0' : qvoall_onlineSize, qvoall_offlineSize == 0 ? '0' : qvoall_offlineSize, qvoall_workspace == 0 ? '0' : qvoall_workspace)}`;
+        qvoall.detail = `${(0, Localize)("sshtool.group.msg.list2.title", qvoall_groupSize == 0 ? '0' : qvoall_groupSize, qvoall_currGNsize == 0 ? '0' : qvoall_currGNsize, qvoall_onlineSize == 0 ? '0' : qvoall_onlineSize, qvoall_offlineSize == 0 ? '0' : qvoall_offlineSize, qvoall_workspace == 0 ? '0' : qvoall_workspace)}`;
         typeArr.push(qvoall);
-        vscode.window.showQuickPick(typeArr, { placeHolder: (0, Localize)("xplot.msg.show.group.list.title") }).then(group => {
+        vscode.window.showQuickPick(typeArr, { placeHolder: (0, Localize)("sshtool.msg.show.group.list.title") }).then(group => {
             if (group) {
                 GroupAPI.to_groups_list_by_name(group.label);
             }

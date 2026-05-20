@@ -119,15 +119,15 @@ class GroupNode extends AbstractNode {
         SSHAPI.copy_ssh_command(this);
     }
     groupRename(node) {
-        vscode_1.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.group.rename.title", node.id), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode_1.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.group.rename.title", node.id), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             if (input) {
                 GroupAPI.group_rename(node.id, input);
-                Console.info((0, Localize)("xplot.msg.api.group.rename.ok", node.id, input));
+                Console.info((0, Localize)("sshtool.msg.api.group.rename.ok", node.id, input));
             }
             else {
-                Console.info((0, Localize)("xplot.msg.api.group.rename.no", node.id));
+                Console.info((0, Localize)("sshtool.msg.api.group.rename.no", node.id));
             }
         }));
     }

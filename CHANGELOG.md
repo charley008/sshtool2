@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.1.4 - 2026-05-20
+
+- Changed the extension identity to `charley008.sshtools2` so it no longer conflicts with the Marketplace version.
+- Renamed contributed commands and views to the `sshtools2.*` namespace for safer side-by-side installation.
+- Updated VSIX packaging to use the package name in `packages/sshtools2-*.vsix`.
+- Fixed WebView action allow-list entries for connection tests and management buttons.
+- Fixed SSH/FTP online status probing and workspace add guard handling.
+
 ## 2.1.3 - 2026-05-12
 
 - Added SSH HostKey fingerprint recording and change warning.

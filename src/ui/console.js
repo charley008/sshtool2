@@ -22,7 +22,7 @@ const { Storage } = require("../storage/storage.js");
 class Console {
     static log(value) {
         if (this.outputChannel == null) {
-            this.outputChannel = vscode.window.createOutputChannel((0, Localize)("xplot.title"));
+            this.outputChannel = vscode.window.createOutputChannel((0, Localize)("sshtool.title"));
         }
         const date = dayjs().format('YYYY-MM-DD HH:mm:ss.SSS');
         const keys = Storage.get_status_keys();
@@ -50,7 +50,7 @@ class Console {
     }
     static debug(msg) {
         if (this.outputChannel == null) {
-            this.outputChannel = vscode.window.createOutputChannel((0, Localize)("xplot.title"));
+            this.outputChannel = vscode.window.createOutputChannel((0, Localize)("sshtool.title"));
         }
         const keys = Storage.get_status_keys();
         const str = `[DEBUG] ${msg}`;

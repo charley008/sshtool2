@@ -135,7 +135,7 @@ class Node extends AbstractNode {
                     resolve(SSHAPI.build_children(that, list, parent));
                 }
                 else {
-                    resolve([new InfoNode((0, Localize)("xplot.timeout"))]);
+                    resolve([new InfoNode((0, Localize)("sshtool.timeout"))]);
                 }
             }
             if (that.info.type == Type.FTP) {
@@ -145,7 +145,7 @@ class Node extends AbstractNode {
                     resolve(FTPAPI.build_children(that, list, parent));
                 }
                 else {
-                    resolve([new InfoNode((0, Localize)("xplot.timeout"))]);
+                    resolve([new InfoNode((0, Localize)("sshtool.timeout"))]);
                 }
             }
         }));

@@ -42,13 +42,13 @@ class FTPAPI {
         const ftpInfo = ftpvo.ftp;
         const workspaces = ftpvo.workspaces;
         if (FTPVO.put(ftpInfo)) {
-            Console.info((0, Localize)("xplot.msg.conn.add.ok", FTPVO.title(ftpInfo)));
+            Console.info((0, Localize)("sshtool.msg.conn.add.ok", FTPVO.title(ftpInfo)));
             for (let r in workspaces) {
                 WorkSpaceVO.put(workspaces[r]);
             }
         }
         else {
-            Console.info((0, Localize)("xplot.msg.conn.add.no", FTPVO.title(ftpInfo)));
+            Console.info((0, Localize)("sshtool.msg.conn.add.no", FTPVO.title(ftpInfo)));
         }
     }
     // 批量导入ftpvo  { [key: string]: FTPVO }
@@ -69,7 +69,7 @@ class FTPAPI {
     //文件重命名
     static file_rename(that) {
         let filename = that.file.name;
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.rename.title", filename), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.file.rename.title", filename), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             const nameCheck = validateRemoteName(input);
@@ -84,17 +84,17 @@ class FTPAPI {
                 const flag = yield FTPConn.rename(that.info.ftp, old_name, pathCheck.value);
                 if (flag) {
                     _core.API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.rename.ok", filename, nameCheck.value));
+                    Console.info((0, Localize)("sshtool.msg.api.file.rename.ok", filename, nameCheck.value));
                 }
             }
             else {
-                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.rename.no", filename));
+                Console.info(nameCheck.message || (0, Localize)("sshtool.msg.api.file.rename.no", filename));
             }
         }));
     }
     //新建文件
     static new_file(that) {
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.file.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             const nameCheck = validateRemoteName(input);
@@ -121,19 +121,19 @@ class FTPAPI {
                 const rt = yield FTPConn.put(ftpInfo, tempPath, pathCheck.value);
                 if (rt) {
                     _core.API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.new.yes", nameCheck.value));
+                    Console.info((0, Localize)("sshtool.msg.api.file.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("sshtool.msg.api.file.new.no"));
             }
         }));
     }
     //删除文件
     static file_delete(that) {
         let filename = that.file.name;
-        vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
-            if (str == (0, Localize)("xplot.yes")) {
+        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+            if (str == (0, Localize)("sshtool.yes")) {
                 const pathCheck = validateRemoteOperationPath(that.fullPath);
                 if (!pathCheck.ok) {
                     Console.warn(pathCheck.message);
@@ -143,18 +143,18 @@ class FTPAPI {
                     const rt = yield FTPConn.rmdir(that.info.ftp, pathCheck.value);
                     if (rt) {
                         _core.API.refresh();
-                        Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
+                        Console.info((0, Localize)("sshtool.msg.api.file.delete.yes", that.fullPath));
                     }
                 }
                 else if (that.contextValue == constant_1.NodeType.FTP_FILE) {
                     const rt = yield FTPConn.delete(that.info.ftp, pathCheck.value);
                     if (rt) {
                         _core.API.refresh();
-                        Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
+                        Console.info((0, Localize)("sshtool.msg.api.file.delete.yes", that.fullPath));
                     }
                 }
                 else {
-                    Console.warn((0, Localize)("xplot.msg.api.file.delete.err", that.contextValue));
+                    Console.warn((0, Localize)("sshtool.msg.api.file.delete.err", that.contextValue));
                 }
             }
         }));
@@ -168,12 +168,12 @@ class FTPAPI {
             const extName = path.extname(that.file.name).toLowerCase();
             for (const ext of Settings.ProhibitFileExt) {
                 if (extName == ext) {
-                    Console.warn((0, Localize)("xplot.msg.api.file.open.err.fileext", extName));
+                    Console.warn((0, Localize)("sshtool.msg.api.file.open.err.fileext", extName));
                     return;
                 }
             }
             if (that.file.size > Settings.OpenFileMaxSize * 1048576) {
-                Console.warn((0, Localize)("xplot.msg.api.file.open.err.filemaxsize", that.file.name, Settings.OpenFileMaxSize + "MB"));
+                Console.warn((0, Localize)("sshtool.msg.api.file.open.err.filemaxsize", that.file.name, Settings.OpenFileMaxSize + "MB"));
                 return;
             }
             const keyDir = `${ftpInfo.ftp.user}@${ftpInfo.ftp.host}#${ftpInfo.ftp.port}`;
@@ -186,7 +186,7 @@ class FTPAPI {
             const tempPath = yield fileManager_1.FileManager.record(`temp/${keyDir}${fullPath}`, null, fileManager_1.FileModel.WRITE);
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("xplot.msg.api.file.open.title", that.fullPath),
+                title: (0, Localize)("sshtool.msg.api.file.open.title", that.fullPath),
                 cancellable: true
             }, (progress, token) => {
                 return new Promise((resolve) => {
@@ -199,7 +199,7 @@ class FTPAPI {
                     let option = {
                         step: function (total_transferred, chunk, total) {
                             const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("xplot.msg.api.file.open.remaining", prettyBytes(total - total_transferred)) });
+                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.open.remaining", prettyBytes(total - total_transferred)) });
                             before = percentage;
                         }
                     };
@@ -223,7 +223,7 @@ class FTPAPI {
                                     outStream.destroy();
                                 });
                                 outStream.on("finish", () => {
-                                    Console.info((0, Localize)("xplot.msg.api.file.open.ok", that.fullPath, time));
+                                    Console.info((0, Localize)("sshtool.msg.api.file.open.ok", that.fullPath, time));
                                     const hash_v = Util.fileHash(path.resolve(tempPath));
                                     Storage.set_temp_file_remote(tempPath, { remote: that.fullPath, ftp: ftpInfo, hash: hash_v });
                                     vscode.commands.executeCommand('vscode.open', vscode.Uri.file(tempPath));
@@ -281,7 +281,7 @@ class FTPAPI {
                                 flag = "Unknown";
                             }
                             const cpath = currpath ? `${currpath}/${entry.name}` : entry.name;
-                            Console.info((0, Localize)("xplot.msg.api.file.download.filter", flag, cpath));
+                            Console.info((0, Localize)("sshtool.msg.api.file.download.filter", flag, cpath));
                         }
                     }
                     resolve(entrys);
@@ -296,7 +296,7 @@ class FTPAPI {
     static file_download(that) {
         var _a;
         if (that.contextValue == constant_1.NodeType.FTP_FOLDER || that.contextValue == constant_1.NodeType.FTP_WORKSPACE) {
-            vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
+            vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
                     const remoteCheck = validateRemoteOperationPath(that.fullPath);
@@ -335,7 +335,7 @@ class FTPAPI {
                     // console.log("提示", entrys)
                     const entry_list_size = entrys.length;
                     if (entry_list_size == 0) {
-                        Console.info((0, Localize)("xplot.msg.api.file.download.null"));
+                        Console.info((0, Localize)("sshtool.msg.api.file.download.null"));
                     }
                     let curr_entry_index = 0;
                     for (const entry of entrys) {
@@ -350,7 +350,7 @@ class FTPAPI {
                         }
                         yield vscode.window.withProgress({
                             location: vscode.ProgressLocation.Notification,
-                            title: (0, Localize)("xplot.msg.api.file.download.title", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile}`),
+                            title: (0, Localize)("sshtool.msg.api.file.download.title", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile}`),
                             cancellable: true
                         }, (progress, token) => {
                             return new Promise((resolve) => {
@@ -369,10 +369,10 @@ class FTPAPI {
                                         str.on("progress", (progressData) => {
                                             if (progressData.percentage == 100) {
                                                 resolve(null);
-                                                Console.info((0, Localize)("xplot.msg.api.file.download.ok", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile} to ${ldir}`, progressData.runtime + 1));
+                                                Console.info((0, Localize)("sshtool.msg.api.file.download.ok", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile} to ${ldir}`, progressData.runtime + 1));
                                                 return;
                                             }
-                                            progress.report({ increment: progressData.percentage - before, message: (0, Localize)("xplot.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
+                                            progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
                                             before = progressData.percentage;
                                         });
                                         str.on("error", err => {
@@ -395,7 +395,7 @@ class FTPAPI {
         }
         else {
             const extName = (_a = (0, extname)(that.file.name)) === null || _a === void 0 ? void 0 : _a.replace(".", "");
-            vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.name), filters: { "Type": [extName] }, saveLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
+            vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.name), filters: { "Type": [extName] }, saveLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
                     const remoteCheck = validateRemoteOperationPath(that.fullPath);
@@ -408,7 +408,7 @@ class FTPAPI {
                     var progressStream = require("../utils/progress-stream.js");
                     vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("xplot.msg.api.file.download.title", that.fullPath),
+                        title: (0, Localize)("sshtool.msg.api.file.download.title", that.fullPath),
                         cancellable: true
                     }, (progress, token) => {
                         return new Promise((resolve) => {
@@ -428,10 +428,10 @@ class FTPAPI {
                                     str.on("progress", (progressData) => {
                                         if (progressData.percentage == 100) {
                                             resolve(null);
-                                            Console.info((0, Localize)("xplot.msg.api.file.download.ok", that.fullPath, progressData.runtime + 1));
+                                            Console.info((0, Localize)("sshtool.msg.api.file.download.ok", that.fullPath, progressData.runtime + 1));
                                             return;
                                         }
-                                        progress.report({ increment: progressData.percentage - before, message: (0, Localize)("xplot.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
+                                        progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
                                         before = progressData.percentage;
                                     });
                                     str.on("error", err => {
@@ -454,7 +454,7 @@ class FTPAPI {
     }
     // 新建目录
     static new_folder(that) {
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             const nameCheck = validateRemoteName(input);
@@ -472,17 +472,17 @@ class FTPAPI {
                 const rt = yield FTPConn.mkdir(ftpInfo, pathCheck.value);
                 if (rt) {
                     _core.API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.folder.new.yes", nameCheck.value));
+                    Console.info((0, Localize)("sshtool.msg.api.folder.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.folder.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("sshtool.msg.api.folder.new.no"));
             }
         }));
     }
     // 上传文件
     static file_upload(that) {
-        vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, canSelectFolders: false, openLabel: (0, Localize)("xplot.msg.conn.uploadfile") })
+        vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, canSelectFolders: false, openLabel: (0, Localize)("sshtool.msg.conn.uploadfile") })
             .then((uri) => __awaiter(this, void 0, void 0, function* () {
             if (uri) {
                 const url_size = uri.length;
@@ -498,7 +498,7 @@ class FTPAPI {
                     }
                     yield vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("xplot.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
+                        title: (0, Localize)("sshtool.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
                         cancellable: true
                     }, (progress, token) => {
                         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
@@ -507,7 +507,7 @@ class FTPAPI {
                             const end_time = new Date().getTime();
                             const time = ((end_time - begin_time) / 1000).toFixed(2);
                             if (rt) {
-                                Console.info((0, Localize)("xplot.msg.api.file.upload.ok", `[${curr_url_index}/${url_size}] ${targetPath}`, time));
+                                Console.info((0, Localize)("sshtool.msg.api.file.upload.ok", `[${curr_url_index}/${url_size}] ${targetPath}`, time));
                                 resolve(null);
                             }
                             _core.API.refresh();
@@ -597,18 +597,18 @@ class FTPAPI {
             if (ftps[id].status == constant_1.SSHType.ONLINE) {
             }
             else {
-                Console.warn((0, Localize)("xplot.msg.api.file.save.err", remotePath, id));
+                Console.warn((0, Localize)("sshtool.msg.api.file.save.err", remotePath, id));
                 return;
             }
             // console.log(tfHash,currtfHash) 
             if (currtfHash == tfHash) {
-                Console.info((0, Localize)("xplot.msg.api.file.save.ok", remotePath, 0.01));
+                Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, 0.01));
                 Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ftp: tftp, hash: currtfHash });
                 return;
             }
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("xplot.msg.api.file.save.title", remotePath),
+                title: (0, Localize)("sshtool.msg.api.file.save.title", remotePath),
                 cancellable: true
             }, (progress, token) => {
                 return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
@@ -617,7 +617,7 @@ class FTPAPI {
                     let option = {
                         step: function (total_transferred, chunk, total) {
                             const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("xplot.msg.api.file.save.remaining", prettyBytes(total - total_transferred)) });
+                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.save.remaining", prettyBytes(total - total_transferred)) });
                             before = percentage;
                         }
                     };
@@ -625,7 +625,7 @@ class FTPAPI {
                     const end_time = new Date().getTime();
                     const time = ((end_time - begin_time) / 1000).toFixed(2);
                     if (rt) {
-                        Console.info((0, Localize)("xplot.msg.api.file.save.ok", remotePath, time));
+                        Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, time));
                         Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ftp: tftp, hash: currtfHash });
                         _core.API.refresh();
                         resolve(null);
@@ -641,7 +641,7 @@ class FTPAPI {
     // 删除某个配置信息
     static ftp_delete(info) {
         FTPVO.del(info.ftp.id);
-        Console.info((0, Localize)("xplot.msg.conn.delete.ok", FTPVO.title(info.ftp)));
+        Console.info((0, Localize)("sshtool.msg.conn.delete.ok", FTPVO.title(info.ftp)));
         _core.API.refresh();
     }
     // 断开某个主机的连接
@@ -653,27 +653,27 @@ class FTPAPI {
             if (client) {
                 yield FTPConn.closeFTP(infovo.ftp);
                 state = true;
-                Console.info((0, Localize)("xplot.msg.conn.unlink.ok", title));
+                Console.info((0, Localize)("sshtool.msg.conn.unlink.ok", title));
             }
             if (!state) {
-                Console.info((0, Localize)("xplot.msg.conn.unlink.no", title));
+                Console.info((0, Localize)("sshtool.msg.conn.unlink.no", title));
             }
         });
     }
     // 添加工作区
     static workspace_add(infovo, name, dir) {
         if (WorkSpaceVO.put(new WorkSpaceInfo(infovo.ftp.id, name, new WorkSpace(dir), "desc"))) {
-            Console.info((0, Localize)("xplot.msg.api.workspace.add.ok", dir, name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.add.ok", dir, name));
             _core.API.refresh();
         }
         else {
-            Console.info((0, Localize)("xplot.msg.api.workspace.add.no", name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.add.no", name));
         }
     }
     // 删除工作区
     static workspace_del(ws) {
         if (WorkSpaceVO.del(ws.id)) {
-            Console.info((0, Localize)("xplot.msg.api.workspace.delete.ok", WorkSpaceVO.title(ws)));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.delete.ok", WorkSpaceVO.title(ws)));
             _core.API.refresh();
         }
         else {
@@ -685,11 +685,11 @@ class FTPAPI {
         const wsvo = WorkSpaceVO.get(ws.id);
         wsvo.workspace.name = new_name;
         if (WorkSpaceVO.post(wsvo.workspace)) {
-            Console.info((0, Localize)("xplot.msg.api.workspace.modify.ok", ws.name, new_name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.modify.ok", ws.name, new_name));
             _core.API.refresh();
         }
         else {
-            Console.info((0, Localize)("xplot.msg.api.workspace.modify.no", ws.name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.modify.no", ws.name));
         }
     }
     // 更新配置信息,更新后刷新视图

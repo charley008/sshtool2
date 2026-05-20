@@ -23,7 +23,7 @@ class RemoteDT extends BaseDT {
 
     static Init() {
         if (!this.remotes) {
-            this.remotes = this.context.globalState.get(CacheKey.XPLOT_CACHEKEY_DATA_REMOTE) || {};
+            this.remotes = this.context.globalState.get(CacheKey.SSHTOOL_CACHEKEY_DATA_REMOTE) || {};
         }
     }
 
@@ -35,7 +35,7 @@ class RemoteDT extends BaseDT {
     }
 
     static update_remotes(remotes) {
-        this.context.globalState.update(CacheKey.XPLOT_CACHEKEY_DATA_REMOTE, remotes);
+        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_REMOTE, remotes);
     }
 
     static update_remote(remote) {

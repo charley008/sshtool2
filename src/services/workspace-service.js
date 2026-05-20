@@ -23,12 +23,12 @@ const { ViewManager } = require("../ui/view-option.js");
 class WorkSpaceService {
     createWorkSpaceView(infovo) {
         const tis = {
-            save_title: (0, Localize)("xplot.view.connect.save.title"),
-            connect_title: (0, Localize)("xplot.view.connect.connect.title"),
-            workspace_name_title: (0, Localize)("xplot.view.connect.workspace.name.title"),
-            workspace_dir_title: (0, Localize)("xplot.view.connect.workspace.dir.title"),
-            workspace_rename_title: (0, Localize)("xplot.view.connect.workspace.rename.title"),
-            workspace_delete_title: (0, Localize)("xplot.view.connect.workspace.delete.title")
+            save_title: (0, Localize)("sshtool.view.connect.save.title"),
+            connect_title: (0, Localize)("sshtool.view.connect.connect.title"),
+            workspace_name_title: (0, Localize)("sshtool.view.connect.workspace.name.title"),
+            workspace_dir_title: (0, Localize)("sshtool.view.connect.workspace.dir.title"),
+            workspace_rename_title: (0, Localize)("sshtool.view.connect.workspace.rename.title"),
+            workspace_delete_title: (0, Localize)("sshtool.view.connect.workspace.delete.title")
         };
         let info;
         let info_title;
@@ -53,8 +53,8 @@ class WorkSpaceService {
                     const sshvo = this.getvo(infovo);
                     handler.emit("show", { sshvo: sshvo, titles: tis });
                 }).on("CONNECT_SSH_WORKSPACES_DELETE", (content) => {
-                    vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.msg.api.workspace.delete.title"), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
-                        if (str == (0, Localize)("xplot.yes")) {
+                    vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.workspace.delete.title"), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+                        if (str == (0, Localize)("sshtool.yes")) {
                             const wsinfo = content.workspace;
                             SSHAPI.workspace_del(wsinfo);
                             const sshvo = this.getvo(infovo);
@@ -63,7 +63,7 @@ class WorkSpaceService {
                     }));
                 }).on("CONNECT_SSH_WORKSPACES_MODIFY", (content) => {
                     const wsinfo = content.workspace;
-                    vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.workspace.modify.title", wsinfo.name), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+                    vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.workspace.modify.title", wsinfo.name), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
                         if (input === undefined) return;
                         const wsinfo = content.workspace;
                         input = input.trim() ? input : wsinfo.name;

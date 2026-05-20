@@ -23,7 +23,7 @@ class FTPDT extends BaseDT {
 
     static Init() {
         if (!this.ftps) {
-            this.ftps = this.context.globalState.get(CacheKey.XPLOT_CACHEKEY_DATA_FTP) || {};
+            this.ftps = this.context.globalState.get(CacheKey.SSHTOOL_CACHEKEY_DATA_FTP) || {};
         }
     }
 
@@ -35,7 +35,7 @@ class FTPDT extends BaseDT {
     }
 
     static update_ftps(ftps) {
-        this.context.globalState.update(CacheKey.XPLOT_CACHEKEY_DATA_FTP, ftps);
+        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_FTP, ftps);
     }
 
     static verify_ftp(id) {

@@ -44,7 +44,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sshtools-vsix
+          name: sshtools2-vsix
           path: ${{ steps.vsix.outputs.file }}
           if-no-files-found: error
 

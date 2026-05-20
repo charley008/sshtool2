@@ -68,7 +68,7 @@ class WorkspaceNode extends Node {
                         resolve(SSHAPI.build_children(that, list, parent));
                     }
                     else {
-                        resolve([new InfoNode((0, Localize)("xplot.timeout"))]);
+                        resolve([new InfoNode((0, Localize)("sshtool.timeout"))]);
                     }
                 }
                 if (this.info.type == constant_1.Type.FTP) {
@@ -78,7 +78,7 @@ class WorkspaceNode extends Node {
                         resolve(FTPAPI.build_children(that, list, parent));
                     }
                     else {
-                        resolve([new InfoNode((0, Localize)("xplot.timeout"))]);
+                        resolve([new InfoNode((0, Localize)("sshtool.timeout"))]);
                     }
                 }
             }));

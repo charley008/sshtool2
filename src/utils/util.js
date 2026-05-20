@@ -24,8 +24,8 @@ class Util {
         return (0, join)(_sm.default.context.extensionPath, ...paths);
     }
     static confirm(placeHolder, callback) {
-        vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder }).then((res) => {
-            if (res == (0, Localize)("xplot.yes")) {
+        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder }).then((res) => {
+            if (res == (0, Localize)("sshtool.yes")) {
                 callback();
             }
         });

@@ -15,6 +15,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("../utils/graceful-fs-runtime.js");
+const net = require("net");
 const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
 const { Storage } = require("../storage/storage.js");
@@ -78,8 +79,8 @@ class API {
             keys[constant_1.TempKeys.TEMP_KEYS_TerminalOptions] = options;
         }
         Storage.update_status_keys(keys);
-        vscode.commands.executeCommand('setContext', 'xplot.console.switch', keys[constant_1.ConsoleOututSwitch.KEY]);
-        vscode.commands.executeCommand('setContext', 'xplot.debug', keys[constant_1.DebugSwitch.KEY]);
+        vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', keys[constant_1.ConsoleOututSwitch.KEY]);
+        vscode.commands.executeCommand('setContext', 'sshtools2.debug', keys[constant_1.DebugSwitch.KEY]);
         Console.debug("api.ts func init_keys end");
     }
     // status_bar 初始化
@@ -113,14 +114,14 @@ class API {
         if (flag == constant_1.ConsoleOututSwitch.KEY) {
             // 输出
             if (keys[constant_1.ConsoleOututSwitch.KEY] == constant_1.ConsoleOututSwitch.ON) {
-                vscode.commands.executeCommand('setContext', 'xplot.console.switch', constant_1.ConsoleOututSwitch.OFF);
+                vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', constant_1.ConsoleOututSwitch.OFF);
                 keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.OFF;
-                Console.info((0, Localize)("xplot.console.switch.off.title"));
+                Console.info((0, Localize)("sshtool.console.switch.off.title"));
             }
             else if (keys[constant_1.ConsoleOututSwitch.KEY] == constant_1.ConsoleOututSwitch.OFF) {
-                vscode.commands.executeCommand('setContext', 'xplot.console.switch', constant_1.ConsoleOututSwitch.ON);
+                vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', constant_1.ConsoleOututSwitch.ON);
                 keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.ON;
-                Console.info((0, Localize)("xplot.console.switch.on.title"));
+                Console.info((0, Localize)("sshtool.console.switch.on.title"));
             }
             else {
                 keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.ON;
@@ -129,14 +130,14 @@ class API {
         if (flag == constant_1.DebugSwitch.KEY) {
             // 调试
             if (keys[constant_1.DebugSwitch.KEY] == constant_1.DebugSwitch.ON) {
-                vscode.commands.executeCommand('setContext', 'xplot.debug', constant_1.DebugSwitch.OFF);
+                vscode.commands.executeCommand('setContext', 'sshtools2.debug', constant_1.DebugSwitch.OFF);
                 keys[constant_1.DebugSwitch.KEY] = constant_1.DebugSwitch.OFF;
-                Console.info((0, Localize)("xplot.debug.off.title"));
+                Console.info((0, Localize)("sshtool.debug.off.title"));
             }
             else if (keys[constant_1.DebugSwitch.KEY] == constant_1.DebugSwitch.OFF) {
-                vscode.commands.executeCommand('setContext', 'xplot.debug', constant_1.DebugSwitch.ON);
+                vscode.commands.executeCommand('setContext', 'sshtools2.debug', constant_1.DebugSwitch.ON);
                 keys[constant_1.DebugSwitch.KEY] = constant_1.DebugSwitch.ON;
-                Console.info((0, Localize)("xplot.debug.on.title"));
+                Console.info((0, Localize)("sshtool.debug.on.title"));
             }
             else {
                 keys[constant_1.DebugSwitch.KEY] = constant_1.DebugSwitch.ON;
@@ -234,6 +235,23 @@ class API {
         });
     }
     // 添加信息 主机  或  ftp
+    static probeTcp(host, port, timeout = 2000) {
+        return new Promise((resolve) => {
+            const socket = net.createConnection({ host, port: Number(port), timeout });
+            let settled = false;
+            const finish = (open) => {
+                if (settled) {
+                    return;
+                }
+                settled = true;
+                socket.destroy();
+                resolve(open);
+            };
+            socket.on("connect", () => finish(true));
+            socket.on("timeout", () => finish(false));
+            socket.on("error", () => finish(false));
+        });
+    }
     static open_add() {
         Console.debug("api.ts func open_add begin");
         const types = ['SSH', 'FTP'];
@@ -245,7 +263,7 @@ class API {
             qvo.description = `     [${t}]`;
             typeArr.push(qvo);
         }
-        vscode.window.showQuickPick(typeArr, { placeHolder: (0, Localize)("xplot.conn.add.title") }).then(vo => {
+        vscode.window.showQuickPick(typeArr, { placeHolder: (0, Localize)("sshtool.conn.add.title") }).then(vo => {
             if (vo) {
                 if (vo.label == types[0]) {
                     vscode.commands.executeCommand(constant_1.Command.ADD_SSH);
@@ -392,7 +410,6 @@ class API {
     // 自动检查主机是否在线
     static auto_varify_icmp() {
         return __awaiter(this, void 0, void 0, function* () {
-            const Evilscan = require("../utils/evilscan.js");
             const sshs = require("./ssh-api.js").SSHAPI.get_sshs();
             const ftps = require("./ftp-api.js").FTPAPI.get_ftps();
             const forwards_server = Storage.get_forwards_server();
@@ -408,29 +425,9 @@ class API {
                 const ssh = sshs[i];
                 const sshvo = SSHVO.get(ssh.id);
                 // 检测主机是否在线 
-                const options = {
-                    target: ssh.ssh.host,
-                    port: ssh.ssh.port,
-                    status: 'TROU',
-                    banner: false
-                };
-                new Evilscan(options, function (err, scan) {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        scan.on('result', data => {
-                            if (data.status === "open") {
-                                ssh.status = constant_1.SSHType.ONLINE;
-                            }
-                            else {
-                                ssh.status = constant_1.SSHType.OFFLINE;
-                            }
-                        });
-                        scan.on('error', err => {
-                            ssh.status = constant_1.SSHType.OFFLINE;
-                        });
-                        scan.run();
-                        SSHVO.post(ssh);
-                    });
-                });
+                const isOpen = yield API.probeTcp(ssh.ssh.host, ssh.ssh.port, Settings.PingHostTime * 1000);
+                ssh.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
+                SSHVO.post(ssh);
                 // 检测forward运行状态
                 const forwards = sshvo.forwards;
                 if (Object.keys(forwards).length > 0) {
@@ -480,37 +477,17 @@ class API {
                 const ftp = ftps[i];
                 const ftpvo = FTPVO.get(ftp.id);
                 // 检测主机是否在线 
-                const options = {
-                    target: ftp.ftp.host,
-                    port: ftp.ftp.port,
-                    status: 'TROU',
-                    banner: false
-                };
-                new Evilscan(options, function (err, scan) {
-                    return __awaiter(this, void 0, void 0, function* () {
-                        scan.on('result', data => {
-                            if (data.status === "open") {
-                                ftp.status = constant_1.SSHType.ONLINE;
-                            }
-                            else {
-                                ftp.status = constant_1.SSHType.OFFLINE;
-                            }
-                        });
-                        scan.on('error', err => {
-                            ftp.status = constant_1.SSHType.OFFLINE;
-                        });
-                        scan.run();
-                        FTPVO.post(ftp);
-                    });
-                });
+                const isOpen = yield API.probeTcp(ftp.ftp.host, ftp.ftp.port, Settings.PingHostTime * 1000);
+                ftp.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
+                FTPVO.post(ftp);
             }
         });
     }
     //重新加载sshtools
     static reload() {
         Console.debug("api.ts func reload begin");
-        vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.tools.reload.title"), ignoreFocusOut: false, canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
-            if (str == (0, Localize)("xplot.yes")) {
+        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.tools.reload.title"), ignoreFocusOut: false, canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+            if (str == (0, Localize)("sshtool.yes")) {
                 vscode.commands.executeCommand("workbench.action.reloadWindow");
             }
             Console.debug("api.ts func reload end");

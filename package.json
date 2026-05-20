@@ -1,9 +1,9 @@
 {
-  "name": "sshtools",
-  "displayName": "SSH Tools",
-  "description": "XPLOT Tools for vscode;SSH,FTP,Remote",
-  "version": "2.1.3",
-  "publisher": "XPLOT",
+  "name": "sshtools2",
+  "displayName": "SSH Tools 2",
+  "description": "SSH Tools 2 for VS Code; SSH, SFTP, FTP, remote desktop, port forwarding, and jump host support",
+  "version": "2.1.4",
+  "publisher": "charley008",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -34,57 +34,58 @@
   "badges": [],
   "icon": "resources/images/ssh.png",
   "activationEvents": [
-    "onCommand:xplot.add",
-    "onCommand:xplot.clearall",
-    "onCommand:xplot.config",
-    "onCommand:xplot.connection.delete",
-    "onCommand:xplot.connection.rdesktop",
-    "onCommand:xplot.connection.terminal",
-    "onCommand:xplot.connection.unlink",
-    "onCommand:xplot.console.switch.off",
-    "onCommand:xplot.console.switch.on",
-    "onCommand:xplot.copy.name",
-    "onCommand:xplot.copy.path",
-    "onCommand:xplot.copy.scp.path",
-    "onCommand:xplot.debug.off",
-    "onCommand:xplot.debug.on",
-    "onCommand:xplot.edit",
-    "onCommand:xplot.file.delete",
-    "onCommand:xplot.file.download",
-    "onCommand:xplot.file.new",
-    "onCommand:xplot.file.upload",
-    "onCommand:xplot.folder.new",
-    "onCommand:xplot.folder.open",
-    "onCommand:xplot.forward.port",
-    "onCommand:xplot.group.in",
-    "onCommand:xplot.group.list",
-    "onCommand:xplot.group.out",
-    "onCommand:xplot.group.rename",
-    "onCommand:xplot.host.copy",
-    "onCommand:xplot.refresh",
-    "onCommand:xplot.reload",
-    "onCommand:xplot.remote.management",
-    "onCommand:xplot.rename",
-    "onCommand:xplot.socks.port",
-    "onCommand:xplot.terminal.hear",
-    "onCommand:xplot.workspace.add",
-    "onCommand:xplot.workspace.del",
-    "onCommand:xplot.workspace.management",
-    "onCommand:xplot.workspace.modify",
-    "onView:xplot.manager",
-    "onView:xplot.offline",
-    "onView:xplot.online",
-    "onView:xplot.workspace.offline",
-    "onView:xplot.workspace.online"
+    "onCommand:sshtools2.add",
+    "onCommand:sshtools2.clearall",
+    "onCommand:sshtools2.config",
+    "onCommand:sshtools2.connection.delete",
+    "onCommand:sshtools2.connection.rdesktop",
+    "onCommand:sshtools2.connection.terminal",
+    "onCommand:sshtools2.connection.unlink",
+    "onCommand:sshtools2.console.switch.off",
+    "onCommand:sshtools2.console.switch.on",
+    "onCommand:sshtools2.copy.name",
+    "onCommand:sshtools2.copy.path",
+    "onCommand:sshtools2.copy.scp.path",
+    "onCommand:sshtools2.debug.off",
+    "onCommand:sshtools2.debug.on",
+    "onCommand:sshtools2.edit",
+    "onCommand:sshtools2.file.delete",
+    "onCommand:sshtools2.file.download",
+    "onCommand:sshtools2.file.open",
+    "onCommand:sshtools2.file.new",
+    "onCommand:sshtools2.file.upload",
+    "onCommand:sshtools2.folder.new",
+    "onCommand:sshtools2.folder.open",
+    "onCommand:sshtools2.forward.port",
+    "onCommand:sshtools2.group.in",
+    "onCommand:sshtools2.group.list",
+    "onCommand:sshtools2.group.out",
+    "onCommand:sshtools2.group.rename",
+    "onCommand:sshtools2.host.copy",
+    "onCommand:sshtools2.refresh",
+    "onCommand:sshtools2.reload",
+    "onCommand:sshtools2.remote.management",
+    "onCommand:sshtools2.rename",
+    "onCommand:sshtools2.socks.port",
+    "onCommand:sshtools2.terminal.hear",
+    "onCommand:sshtools2.workspace.add",
+    "onCommand:sshtools2.workspace.del",
+    "onCommand:sshtools2.workspace.management",
+    "onCommand:sshtools2.workspace.modify",
+    "onView:sshtools2.manager",
+    "onView:sshtools2.offline",
+    "onView:sshtools2.online",
+    "onView:sshtools2.workspace.offline",
+    "onView:sshtools2.workspace.online"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "configuration": {
       "type": "object",
-      "title": "XPLOT Tools",
+      "title": "SSH Tools 2",
       "properties": {
-        "XPLOTTools.default.PingHostTime": {
-          "markdownDescription": "%xplot.properties.default.ping_host_time.title%",
+        "SSHTOOLTools.default.PingHostTime": {
+          "markdownDescription": "%sshtool.properties.default.ping_host_time.title%",
           "type": "number",
           "default": 3,
           "enum": [
@@ -102,8 +103,8 @@
             300
           ]
         },
-        "XPLOTTools.default.RefreshNodeTime": {
-          "markdownDescription": "%xplot.properties.default.refresh_node_time.title%",
+        "SSHTOOLTools.default.RefreshNodeTime": {
+          "markdownDescription": "%sshtool.properties.default.refresh_node_time.title%",
           "type": "number",
           "default": 30,
           "enum": [
@@ -120,8 +121,8 @@
             300
           ]
         },
-        "XPLOTTools.default.ShowHiddenFilesAndFolders": {
-          "markdownDescription": "%xplot.properties.default.show_hidden_files_and_folders.title%",
+        "SSHTOOLTools.default.ShowHiddenFilesAndFolders": {
+          "markdownDescription": "%sshtool.properties.default.show_hidden_files_and_folders.title%",
           "type": "boolean",
           "default": false,
           "enum": [
@@ -129,15 +130,15 @@
             false
           ]
         },
-        "XPLOTTools.default.OpenFileMaxSize": {
-          "markdownDescription": "%xplot.properties.default.open_file_max_size.title%",
+        "SSHTOOLTools.default.OpenFileMaxSize": {
+          "markdownDescription": "%sshtool.properties.default.open_file_max_size.title%",
           "type": "number",
           "default": 10,
           "pattern": "^(\\d+(?:\\.\\d+)?)$"
         },
-        "XPLOTTools.default.ProhibitFileExt": {
+        "SSHTOOLTools.default.ProhibitFileExt": {
           "type": "array",
-          "description": "%xplot.properties.default.prohibit_file_ext.title%",
+          "description": "%sshtool.properties.default.prohibit_file_ext.title%",
           "default": [
             ".zip",
             ".exe",
@@ -158,8 +159,8 @@
             "type": "string"
           }
         },
-        "XPLOTTools.default.SaveLocalFileTempCacheInformation": {
-          "markdownDescription": "%xplot.properties.default.save_local_file_temp_cache_information.title%",
+        "SSHTOOLTools.default.SaveLocalFileTempCacheInformation": {
+          "markdownDescription": "%sshtool.properties.default.save_local_file_temp_cache_information.title%",
           "type": "boolean",
           "default": false,
           "enum": [
@@ -171,482 +172,486 @@
     },
     "viewsWelcome": [
       {
-        "view": "xplot.online",
-        "contents": "%xplot.viewswelcome.xplot.host.contents%"
+        "view": "sshtools2.online",
+        "contents": "%sshtool.viewswelcome.sshtool.host.contents%"
       },
       {
-        "view": "xplot.offline",
-        "contents": "%xplot.viewswelcome.xplot.host.contents%"
+        "view": "sshtools2.offline",
+        "contents": "%sshtool.viewswelcome.sshtool.host.contents%"
       },
       {
-        "view": "xplot.manager",
-        "contents": "%xplot.viewswelcome.xplot.host.contents%"
+        "view": "sshtools2.manager",
+        "contents": "%sshtool.viewswelcome.sshtool.host.contents%"
       },
       {
-        "view": "xplot.workspace.online",
-        "contents": "%xplot.viewswelcome.xplot.workspace.contents%"
+        "view": "sshtools2.workspace.online",
+        "contents": "%sshtool.viewswelcome.sshtool.workspace.contents%"
       },
       {
-        "view": "xplot.workspace.offline",
-        "contents": "%xplot.viewswelcome.xplot.workspace.contents%"
+        "view": "sshtools2.workspace.offline",
+        "contents": "%sshtool.viewswelcome.sshtool.workspace.contents%"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "xplot-host",
-          "title": "%xplot.title%",
+          "id": "sshtools2-host",
+          "title": "%sshtool.title%",
           "icon": "resources/images/ssh.png"
         },
         {
-          "id": "xplot-workspace",
-          "title": "%xplot.workspace.title%",
+          "id": "sshtools2-workspace",
+          "title": "%sshtool.workspace.title%",
           "icon": "resources/images/workspace.png"
         }
       ]
     },
     "views": {
-      "xplot-host": [
+      "sshtools2-host": [
         {
-          "id": "xplot.online",
-          "name": "%xplot.online.title%"
+          "id": "sshtools2.online",
+          "name": "%sshtool.online.title%"
         },
         {
-          "id": "xplot.offline",
-          "name": "%xplot.offline.title%"
+          "id": "sshtools2.offline",
+          "name": "%sshtool.offline.title%"
         },
         {
-          "id": "xplot.manager",
-          "name": "%xplot.manager.title%"
+          "id": "sshtools2.manager",
+          "name": "%sshtool.manager.title%"
         }
       ],
-      "xplot-workspace": [
+      "sshtools2-workspace": [
         {
-          "id": "xplot.workspace.online",
-          "name": "%xplot.online.title%"
+          "id": "sshtools2.workspace.online",
+          "name": "%sshtool.online.title%"
         },
         {
-          "id": "xplot.workspace.offline",
-          "name": "%xplot.offline.title%"
+          "id": "sshtools2.workspace.offline",
+          "name": "%sshtool.offline.title%"
         }
       ]
     },
     "commands": [
       {
-        "command": "xplot.add",
-        "title": "%xplot.conn.add.title%",
-        "category": "XPLOT",
+        "command": "sshtools2.add",
+        "title": "%sshtool.conn.add.title%",
+        "category": "SSHTOOL",
         "icon": {
           "light": "resources/images/light/add.svg",
           "dark": "resources/images/dark/add.svg"
         }
       },
       {
-        "command": "xplot.edit",
-        "title": "%xplot.conn.edit.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.edit",
+        "title": "%sshtool.conn.edit.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.reload",
-        "title": "%xplot.conn.reload.title%",
-        "category": "XPLOT",
+        "command": "sshtools2.reload",
+        "title": "%sshtool.conn.reload.title%",
+        "category": "SSHTOOL",
         "icon": {
           "light": "resources/images/light/reload.svg",
           "dark": "resources/images/dark/reload.svg"
         }
       },
       {
-        "command": "xplot.refresh",
-        "title": "%xplot.conn.refresh.title%",
-        "category": "XPLOT",
+        "command": "sshtools2.refresh",
+        "title": "%sshtool.conn.refresh.title%",
+        "category": "SSHTOOL",
         "icon": {
           "light": "resources/images/light/refresh.svg",
           "dark": "resources/images/dark/refresh.svg"
         }
       },
       {
-        "command": "xplot.group.list",
-        "title": "%xplot.conn.group.list.title%",
-        "category": "XPLOT",
+        "command": "sshtools2.group.list",
+        "title": "%sshtool.conn.group.list.title%",
+        "category": "SSHTOOL",
         "icon": {
           "light": "resources/images/light/group.svg",
           "dark": "resources/images/dark/group.svg"
         }
       },
       {
-        "command": "xplot.group.rename",
-        "title": "%xplot.conn.group.rename.title%"
+        "command": "sshtools2.group.rename",
+        "title": "%sshtool.conn.group.rename.title%"
       },
       {
-        "command": "xplot.group.in",
-        "title": "%xplot.conn.group.in.title%"
+        "command": "sshtools2.group.in",
+        "title": "%sshtool.conn.group.in.title%"
       },
       {
-        "command": "xplot.group.out",
-        "title": "%xplot.conn.group.out.title%"
+        "command": "sshtools2.group.out",
+        "title": "%sshtool.conn.group.out.title%"
       },
       {
-        "command": "xplot.config",
-        "title": "%xplot.config.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.config",
+        "title": "%sshtool.config.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.clearall",
-        "title": "%xplot.clearall.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.clearall",
+        "title": "%sshtool.clearall.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.console.switch.on",
-        "title": "%xplot.console.switch.on.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.console.switch.on",
+        "title": "%sshtool.console.switch.on.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.console.switch.off",
-        "title": "%xplot.console.switch.off.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.console.switch.off",
+        "title": "%sshtool.console.switch.off.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.debug.on",
-        "title": "%xplot.debug.on.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.debug.on",
+        "title": "%sshtool.debug.on.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.debug.off",
-        "title": "%xplot.debug.off.title%",
-        "category": "XPLOT"
+        "command": "sshtools2.debug.off",
+        "title": "%sshtool.debug.off.title%",
+        "category": "SSHTOOL"
       },
       {
-        "command": "xplot.connection.unlink",
-        "title": "%xplot.conn.unlink.title%",
+        "command": "sshtools2.connection.unlink",
+        "title": "%sshtool.conn.unlink.title%",
         "icon": {
           "light": "resources/images/light/unlink.svg",
           "dark": "resources/images/dark/unlink.svg"
         }
       },
       {
-        "command": "xplot.connection.delete",
-        "title": "%xplot.conn.delete.title%",
+        "command": "sshtools2.connection.delete",
+        "title": "%sshtool.conn.delete.title%",
         "icon": {
           "light": "resources/images/light/delete.svg",
           "dark": "resources/images/dark/delete.svg"
         }
       },
       {
-        "command": "xplot.connection.terminal",
-        "title": "%xplot.conn.terminal.title%",
+        "command": "sshtools2.connection.terminal",
+        "title": "%sshtool.conn.terminal.title%",
         "icon": {
           "light": "resources/images/light/terminal.svg",
           "dark": "resources/images/dark/terminal.svg"
         }
       },
       {
-        "command": "xplot.connection.rdesktop",
-        "title": "%xplot.conn.rdesktop.title%",
+        "command": "sshtools2.connection.rdesktop",
+        "title": "%sshtool.conn.rdesktop.title%",
         "icon": {
           "light": "resources/images/light/rdesktop.svg",
           "dark": "resources/images/dark/rdesktop.svg"
         }
       },
       {
-        "command": "xplot.terminal.hear",
-        "title": "%xplot.conn.terminal.title%"
+        "command": "sshtools2.terminal.hear",
+        "title": "%sshtool.conn.terminal.title%"
       },
       {
-        "command": "xplot.file.new",
-        "title": "%xplot.conn.newfile.title%"
+        "command": "sshtools2.file.new",
+        "title": "%sshtool.conn.newfile.title%"
       },
       {
-        "command": "xplot.folder.new",
-        "title": "%xplot.conn.newfolder.title%"
+        "command": "sshtools2.folder.new",
+        "title": "%sshtool.conn.newfolder.title%"
       },
       {
-        "command": "xplot.workspace.add",
-        "title": "%xplot.workspace.add.title%"
+        "command": "sshtools2.workspace.add",
+        "title": "%sshtool.workspace.add.title%"
       },
       {
-        "command": "xplot.workspace.del",
-        "title": "%xplot.workspace.del.title%",
+        "command": "sshtools2.workspace.del",
+        "title": "%sshtool.workspace.del.title%",
         "icon": {
           "light": "resources/images/light/delete.svg",
           "dark": "resources/images/dark/delete.svg"
         }
       },
       {
-        "command": "xplot.workspace.modify",
-        "title": "%xplot.workspace.modify.title%"
+        "command": "sshtools2.workspace.modify",
+        "title": "%sshtool.workspace.modify.title%"
       },
       {
-        "command": "xplot.remote.management",
-        "title": "%xplot.remote.management.title%"
+        "command": "sshtools2.remote.management",
+        "title": "%sshtool.remote.management.title%"
       },
       {
-        "command": "xplot.copy.name",
-        "title": "%xplot.conn.copy.name.title%"
+        "command": "sshtools2.copy.name",
+        "title": "%sshtool.conn.copy.name.title%"
       },
       {
-        "command": "xplot.copy.path",
-        "title": "%xplot.conn.copy.path.title%"
+        "command": "sshtools2.copy.path",
+        "title": "%sshtool.conn.copy.path.title%"
       },
       {
-        "command": "xplot.copy.scp.path",
-        "title": "%xplot.conn.copy.scp.path.title%"
+        "command": "sshtools2.copy.scp.path",
+        "title": "%sshtool.conn.copy.scp.path.title%"
       },
       {
-        "command": "xplot.host.copy",
-        "title": "%xplot.conn.cpsshcmd.title%"
+        "command": "sshtools2.host.copy",
+        "title": "%sshtool.conn.cpsshcmd.title%"
       },
       {
-        "command": "xplot.forward.port",
-        "title": "%xplot.conn.forwardport.title%"
+        "command": "sshtools2.forward.port",
+        "title": "%sshtool.conn.forwardport.title%"
       },
       {
-        "command": "xplot.socks.port",
-        "title": "%xplot.conn.startsp.title%"
+        "command": "sshtools2.socks.port",
+        "title": "%sshtool.conn.startsp.title%"
       },
       {
-        "command": "xplot.workspace.management",
-        "title": "%xplot.workspace.management.title%"
+        "command": "sshtools2.workspace.management",
+        "title": "%sshtool.workspace.management.title%"
       },
       {
-        "command": "xplot.folder.open",
-        "title": "%xplot.conn.terminal.title%"
+        "command": "sshtools2.folder.open",
+        "title": "%sshtool.conn.terminal.title%"
       },
       {
-        "command": "xplot.file.delete",
-        "title": "%xplot.conn.deletefile.title%"
+        "command": "sshtools2.file.open",
+        "title": "%sshtool.msg.api.file.open.title%"
       },
       {
-        "command": "xplot.rename",
-        "title": "%xplot.conn.rename.title%"
+        "command": "sshtools2.file.delete",
+        "title": "%sshtool.conn.deletefile.title%"
       },
       {
-        "command": "xplot.file.download",
-        "title": "%xplot.conn.downloadfile.title%",
+        "command": "sshtools2.rename",
+        "title": "%sshtool.conn.rename.title%"
+      },
+      {
+        "command": "sshtools2.file.download",
+        "title": "%sshtool.conn.downloadfile.title%",
         "icon": "$(cloud-download)"
       },
       {
-        "command": "xplot.file.upload",
-        "title": "%xplot.conn.uploadfile.title%",
+        "command": "sshtools2.file.upload",
+        "title": "%sshtool.conn.uploadfile.title%",
         "icon": "$(cloud-upload)"
       }
     ],
     "menus": {
       "view/title": [
         {
-          "command": "xplot.reload",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/",
+          "command": "sshtools2.reload",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/",
           "group": "navigation@0"
         },
         {
-          "command": "xplot.refresh",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/",
+          "command": "sshtools2.refresh",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/",
           "group": "navigation@1"
         },
         {
-          "command": "xplot.add",
-          "when": "view =~ /^xplot.online$|^xplot.manager$/",
+          "command": "sshtools2.add",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$/",
           "group": "navigation@3"
         },
         {
-          "command": "xplot.group.list",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/",
+          "command": "sshtools2.group.list",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/",
           "group": "navigation@2"
         },
         {
-          "command": "xplot.config",
-          "when": "view =~ /^xplot.online$|^xplot.manager$/",
+          "command": "sshtools2.config",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$/",
           "group": "2_navigation@0"
         },
         {
-          "command": "xplot.clearall",
-          "when": "view =~ /^xplot.online$|^xplot.manager$/",
+          "command": "sshtools2.clearall",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$/",
           "group": "4_navigation@1"
         },
         {
-          "command": "xplot.console.switch.on",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && xplot.console.switch == OFF",
+          "command": "sshtools2.console.switch.on",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && sshtools2.console.switch == OFF",
           "group": "5_navigation@1"
         },
         {
-          "command": "xplot.console.switch.off",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && xplot.console.switch == ON",
+          "command": "sshtools2.console.switch.off",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && sshtools2.console.switch == ON",
           "group": "5_navigation@1"
         },
         {
-          "command": "xplot.debug.on",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && xplot.debug == OFF",
+          "command": "sshtools2.debug.on",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && sshtools2.debug == OFF",
           "group": "6_navigation@1"
         },
         {
-          "command": "xplot.debug.off",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && xplot.debug == ON",
+          "command": "sshtools2.debug.off",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && sshtools2.debug == ON",
           "group": "6_navigation@1"
         }
       ],
       "view/item/context": [
         {
-          "command": "xplot.connection.rdesktop",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online|xplot.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
+          "command": "sshtools2.connection.rdesktop",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online|sshtools2.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
           "group": "inline@0"
         },
         {
-          "command": "xplot.connection.terminal",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
+          "command": "sshtools2.connection.terminal",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
           "group": "inline@1"
         },
         {
-          "command": "xplot.connection.unlink",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online)$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
+          "command": "sshtools2.connection.unlink",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online)$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
           "group": "inline@2"
         },
         {
-          "command": "xplot.connection.delete",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace|group)$/",
+          "command": "sshtools2.connection.delete",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace|group)$/",
           "group": "inline@3"
         },
         {
-          "command": "xplot.workspace.del",
-          "when": "view =~ /^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
+          "command": "sshtools2.workspace.del",
+          "when": "view =~ /^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
           "group": "inline@4"
         },
         {
-          "command": "xplot.file.upload",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|ftpFolder|ftpLink)$/",
+          "command": "sshtools2.file.upload",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|ftpFolder|ftpLink)$/",
           "group": "inline@0"
         },
         {
-          "command": "xplot.file.download",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem  =~ /^(sshFolder|sshFile|ftpFolder|ftpFile)$/",
+          "command": "sshtools2.file.download",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem  =~ /^(sshFolder|sshFile|ftpFolder|ftpFile)$/",
           "group": "inline@1"
         },
         {
-          "command": "xplot.copy.name",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/ ",
+          "command": "sshtools2.copy.name",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/ ",
           "group": "0_copy@0"
         },
         {
-          "command": "xplot.copy.path",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/ ",
+          "command": "sshtools2.copy.path",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/ ",
           "group": "0_copy@1"
         },
         {
-          "command": "xplot.host.copy",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(ssh|workspace|group)$/",
+          "command": "sshtools2.host.copy",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(ssh|workspace|group)$/",
           "group": "0_copy@2"
         },
         {
-          "command": "xplot.copy.scp.path",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile)$/ ",
+          "command": "sshtools2.copy.scp.path",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile)$/ ",
           "group": "0_copy@4"
         },
         {
-          "command": "xplot.file.new",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
+          "command": "sshtools2.file.new",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
           "group": "1_new@0"
         },
         {
-          "command": "xplot.file.new",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /(sshFolder|sshLink|ftpFolder|ftpLink)$/",
+          "command": "sshtools2.file.new",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /(sshFolder|sshLink|ftpFolder|ftpLink)$/",
           "group": "1_new@1"
         },
         {
-          "command": "xplot.folder.new",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
+          "command": "sshtools2.folder.new",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
           "group": "1_new@2"
         },
         {
-          "command": "xplot.folder.new",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|ftpFolder|ftpLink)$/ ",
+          "command": "sshtools2.folder.new",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|ftpFolder|ftpLink)$/ ",
           "group": "1_new@3"
         },
         {
-          "command": "xplot.rename",
-          "when": "view =~ /^xplot.online$|^xplot.manager|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/ ",
+          "command": "sshtools2.rename",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/ ",
           "group": "1_new@4"
         },
         {
-          "command": "xplot.file.delete",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/",
+          "command": "sshtools2.file.delete",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/",
           "group": "1_new@5"
         },
         {
-          "command": "xplot.file.upload",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshWorkSpace|ftpWorkSpace|sshFolder|sshLink|ftpFolder|ftpLink)$/",
+          "command": "sshtools2.file.upload",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshWorkSpace|ftpWorkSpace|sshFolder|sshLink|ftpFolder|ftpLink)$/",
           "group": "2_ud@0"
         },
         {
-          "command": "xplot.file.download",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem  =~ /^(sshWorkSpace|ftpWorkSpace|sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/",
+          "command": "sshtools2.file.download",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem  =~ /^(sshWorkSpace|ftpWorkSpace|sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/",
           "group": "2_ud@1"
         },
         {
-          "command": "xplot.connection.rdesktop",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online|xplot.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
+          "command": "sshtools2.connection.rdesktop",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online|sshtools2.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
           "group": "3_remote@0"
         },
         {
-          "command": "xplot.remote.management",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online|xplot.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
+          "command": "sshtools2.remote.management",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online|sshtools2.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
           "group": "3_remote@1"
         },
         {
-          "command": "xplot.workspace.add",
-          "when": "view =~ /^(xplot.online|xplot.manager|xplot.workspace.online)$/ && viewItem =~ /^(sshFolder|sshLink|ftpFolder|ftpLink)$/",
+          "command": "sshtools2.workspace.add",
+          "when": "view =~ /^(sshtools2.online|sshtools2.manager|sshtools2.workspace.online)$/ && viewItem =~ /^(sshFolder|sshLink|ftpFolder|ftpLink)$/",
           "group": "4_workspace@0"
         },
         {
-          "command": "xplot.workspace.modify",
-          "when": "view =~ /^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
+          "command": "sshtools2.workspace.modify",
+          "when": "view =~ /^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
           "group": "4_workspace@1"
         },
         {
-          "command": "xplot.workspace.del",
-          "when": "view =~ /^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
+          "command": "sshtools2.workspace.del",
+          "when": "view =~ /^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/ ",
           "group": "4_workspace@2"
         },
         {
-          "command": "xplot.workspace.management",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online|xplot.workspace.offline)$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace|sshFolder|sshLink|ftpFolder|ftpLink)$/",
+          "command": "sshtools2.workspace.management",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online|sshtools2.workspace.offline)$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace|sshFolder|sshLink|ftpFolder|ftpLink)$/",
           "group": "4_workspace@3"
         },
         {
-          "command": "xplot.socks.port",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online|xplot.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
+          "command": "sshtools2.socks.port",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online|sshtools2.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
           "group": "5_forward@0"
         },
         {
-          "command": "xplot.forward.port",
-          "when": "view =~ /^(xplot.online|xplot.offline|xplot.manager|xplot.workspace.online|xplot.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
+          "command": "sshtools2.forward.port",
+          "when": "view =~ /^(sshtools2.online|sshtools2.offline|sshtools2.manager|sshtools2.workspace.online|sshtools2.workspace.offline)$/ && viewItem =~ /^(ssh|sshWorkSpace)$/",
           "group": "5_forward@1"
         },
         {
-          "command": "xplot.edit",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
+          "command": "sshtools2.edit",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
           "group": "5_ssh@0"
         },
         {
-          "command": "xplot.group.in",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^group$/",
+          "command": "sshtools2.group.in",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^group$/",
           "group": "6_group@0"
         },
         {
-          "command": "xplot.group.out",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
+          "command": "sshtools2.group.out",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace)$/",
           "group": "6_group@1"
         },
         {
-          "command": "xplot.group.rename",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^group$/",
+          "command": "sshtools2.group.rename",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^group$/",
           "group": "6_group@2"
         },
         {
-          "command": "xplot.folder.open",
-          "when": "view =~ /^xplot.online$|^xplot.manager$|^xplot.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink)$/",
+          "command": "sshtools2.folder.open",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.manager$|^sshtools2.workspace.online$/ && viewItem =~ /^(sshFolder|sshLink)$/",
           "group": "7_ff@0"
         },
         {
-          "command": "xplot.refresh",
-          "when": "view =~ /^xplot.online$|^xplot.offline$|^xplot.manager$|^xplot.workspace.online$|^xplot.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace|group|sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/",
+          "command": "sshtools2.refresh",
+          "when": "view =~ /^sshtools2.online$|^sshtools2.offline$|^sshtools2.manager$|^sshtools2.workspace.online$|^sshtools2.workspace.offline$/ && viewItem =~ /^(ssh|ftp|sshWorkSpace|ftpWorkSpace|group|sshFolder|sshLink|sshFile|ftpFolder|ftpLink|ftpFile)$/",
           "group": "9_ff@0"
         }
       ]

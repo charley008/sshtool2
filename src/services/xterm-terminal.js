@@ -114,7 +114,7 @@ class XtermTerminal {
                         return;
                     }
                     // handler.emit('header', '')
-                    sshlog(true, (0, Localize)("xplot.msg.conn.terminal.ok"));
+                    sshlog(true, (0, Localize)("sshtool.msg.conn.terminal.ok"));
                     handler.on('data', (data) => {
                         stream.write(data);
                     }).on('resize', (data) => {
@@ -150,7 +150,7 @@ class XtermTerminal {
             });
             client.on('banner', (data) => handler.emit('data', data.replace(/\r?\n/g, '\r\n')));
             client.on('end', (err) => { sshlog(false, 'CONN END BY HOST', err); handler.panel?.dispose(); });
-            client.on('close', (err) => { sshlog(false, (0, Localize)("xplot.msg.conn.terminal.close"), err); handler.panel?.dispose(); });
+            client.on('close', (err) => { sshlog(false, (0, Localize)("sshtool.msg.conn.terminal.close"), err); handler.panel?.dispose(); });
             client.on('error', (err) => { sshlog(false, 'CONN ERROR', err); });
             client.on('keyboard-interactive', () => {
                 end();

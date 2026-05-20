@@ -24,7 +24,7 @@ class Global {
                 title = constant_1.StatusBar.ALL;
                 bars[key] = title;
             }
-            tc = `${(0, Localize)("xplot.view.show.group.list.title", `${title} ${desc}`)}`;
+            tc = `${(0, Localize)("sshtool.view.show.group.list.title", `${title} ${desc}`)}`;
         }
         Storage.update_status_bars(bars);
         if (Global.StatusBarItem) {

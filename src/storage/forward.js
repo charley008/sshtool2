@@ -23,7 +23,7 @@ class ForwardDT extends BaseDT {
 
     static Init() {
         if (!this.forwards) {
-            this.forwards = this.context.globalState.get(CacheKey.XPLOT_CACHEKEY_DATA_FORWARD) || {};
+            this.forwards = this.context.globalState.get(CacheKey.SSHTOOL_CACHEKEY_DATA_FORWARD) || {};
         }
     }
 
@@ -35,7 +35,7 @@ class ForwardDT extends BaseDT {
     }
 
     static update_forwards(forwards) {
-        this.context.globalState.update(CacheKey.XPLOT_CACHEKEY_DATA_FORWARD, forwards);
+        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_FORWARD, forwards);
     }
 
     static update_forward(forward) {

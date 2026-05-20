@@ -23,7 +23,7 @@ class SSHDT extends BaseDT {
 
     static Init() {
         if (!this.sshs) {
-            this.sshs = this.context.globalState.get(CacheKey.XPLOT_CACHEKEY_DATA_SSH) || {};
+            this.sshs = this.context.globalState.get(CacheKey.SSHTOOL_CACHEKEY_DATA_SSH) || {};
         }
     }
 
@@ -35,7 +35,7 @@ class SSHDT extends BaseDT {
     }
 
     static update_sshs(sshs) {
-        this.context.globalState.update(CacheKey.XPLOT_CACHEKEY_DATA_SSH, sshs);
+        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_SSH, sshs);
     }
 
     static verify_ssh(id) {

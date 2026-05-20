@@ -13,6 +13,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 
 const vscode = require("vscode");
+const path = require("path");
 ;
 const Localize = require("../ui/localize.js").default;
 const { Storage } = require("../storage/storage.js");
@@ -81,9 +82,14 @@ class WorkspaceProvider extends NodeProvider {
         return nodes;
     }
     workspace_add(ws) {
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.workspace.add.title", ws.name), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        if (!ws || !ws.info || !ws.fullPath) {
+            vscode.window.showWarningMessage((0, Localize)("sshtool.msg.api.workspace.add.no", ""));
+            return;
+        }
+        const defaultName = ws.name || ws.label || path.basename(String(ws.fullPath).replace(/[\\\/]$/, "")) || "workspace";
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.workspace.add.title", defaultName), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
-            input = input.trim() ? input : ws.name;
+            input = input.trim() ? input : defaultName;
             if (ws.info.type == constant_1.Type.SSH) {
                 SSHAPI.workspace_add(ws.info, input, `${ws.fullPath}/`);
             }
@@ -93,8 +99,8 @@ class WorkspaceProvider extends NodeProvider {
         }));
     }
     workspace_del(ws) {
-        vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.msg.api.workspace.delete.title"), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
-            if (str == (0, Localize)("xplot.yes")) {
+        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.workspace.delete.title"), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+            if (str == (0, Localize)("sshtool.yes")) {
                 if (ws.info.type == constant_1.Type.SSH) {
                     SSHAPI.workspace_del(ws.workSpace);
                 }
@@ -105,7 +111,7 @@ class WorkspaceProvider extends NodeProvider {
         }));
     }
     workspace_modify(ws) {
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.workspace.modify.title", ws.label), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.workspace.modify.title", ws.label), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim() ? input : ws.label.toString();
             if (ws.info.type == constant_1.Type.SSH) {

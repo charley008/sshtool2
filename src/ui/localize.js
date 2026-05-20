@@ -30,8 +30,10 @@ class Localize {
         this.init();
         const languageFormat = "package.nls{0}.json";
         const defaultLanguage = languageFormat.replace("{0}", "");
-        const rootPath = extensions.getExtension("XPLOT.sshtools")
-            .extensionPath;
+        const extension = extensions.getExtension("charley008.sshtools2");
+        const rootPath = extension
+            ? extension.extensionPath
+            : (0, resolve)(__dirname, "..");
         const resolvedLanguage = this.recurseCandidates(rootPath, languageFormat, this.options.locale);
         const languageFilePath = (0, resolve)(rootPath, resolvedLanguage);
         try {

@@ -11,6 +11,7 @@ const { SSHConn } = require("../connections/ssh-connection.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { ViewManager } = require("../ui/view-option.js");
 const { SSHCredentialService } = require("./ssh-credential-service.js");
+const { SSHType } = require("../shared/constants.js");
 class SSHService {
     getJumpHostOptions(currentId = "") {
         const all = SSHVO.getAll() || {};
@@ -48,16 +49,16 @@ class SSHService {
     }
     validateRequiredSshInfo(sshi) {
         if (!sshi.ssh.username) {
-            return (0, Localize)("xplot.msg.conn.input.username");
+            return (0, Localize)("sshtool.msg.conn.input.username");
         }
         if (!sshi.ssh.password && !sshi.ssh.privateKey && !sshi.ssh.privates) {
-            return (0, Localize)("xplot.msg.conn.input.password");
+            return (0, Localize)("sshtool.msg.conn.input.password");
         }
         if (!sshi.ssh.host) {
-            return (0, Localize)("xplot.msg.conn.input.host");
+            return (0, Localize)("sshtool.msg.conn.input.host");
         }
         if (!sshi.ssh.port) {
-            return (0, Localize)("xplot.msg.conn.input.port");
+            return (0, Localize)("sshtool.msg.conn.input.port");
         }
         return this.validateJumpHost(sshi);
     }
@@ -73,41 +74,41 @@ class SSHService {
     }
     createSSHView(sshInfo, flag) {
         const tis = {
-            tab_host_info_title: (0, Localize)("xplot.view.connect.tab.host.info.title"),
-            connect_err_title: (0, Localize)("xplot.view.connect.connect.err.title"),
-            connect_name_title: (0, Localize)("xplot.view.connect.connect.name.title"),
-            connect_name_placeholder_title: (0, Localize)("xplot.view.connect.connect.name.placeholder.title"),
-            host_title: (0, Localize)("xplot.view.connect.host.title"),
-            host_placeholder_title: (0, Localize)("xplot.view.connect.host.placeholder.title"),
-            port_title: (0, Localize)("xplot.view.connect.port.title"),
-            port_placeholder_title: (0, Localize)("xplot.view.connect.port.placeholder.title"),
-            user_title: (0, Localize)("xplot.view.connect.user.title"),
-            user_placeholder_title: (0, Localize)("xplot.view.connect.user.placeholder.title"),
-            group_title: (0, Localize)("xplot.view.connect.group.title"),
-            group_placeholder_title: (0, Localize)("xplot.view.connect.group.placeholder.title"),
-            ostype_title: (0, Localize)("xplot.view.connect.ostype.title"),
-            ostype_windows_description: (0, Localize)("xplot.view.connect.ostype.windows.description"),
-            type_title: (0, Localize)("xplot.view.connect.type.title"),
-            password_title: (0, Localize)("xplot.view.connect.password.title"),
-            password_placeholder_title: (0, Localize)("xplot.view.connect.password.placeholder.title"),
-            privatekey_title: (0, Localize)("xplot.view.connect.privatekey.title"),
-            privatekey_placeholder_title: (0, Localize)("xplot.view.connect.privatekey.placeholder.title"),
-            passphrase_title: (0, Localize)("xplot.view.connect.passphrase.title"),
-            passphrase_placeholder_title: (0, Localize)("xplot.view.connect.passphrase.placeholder.title"),
-            save_title: (0, Localize)("xplot.view.connect.save.title"),
-            connect_title: (0, Localize)("xplot.view.connect.connect.title"),
-            tab_workspace_name_title: (0, Localize)("xplot.view.connect.tab.workspace.name.title"),
-            workspace_name_title: (0, Localize)("xplot.view.connect.workspace.name.title"),
-            workspace_dir_title: (0, Localize)("xplot.view.connect.workspace.dir.title"),
-            workspace_rename_title: (0, Localize)("xplot.view.connect.workspace.rename.title"),
-            workspace_delete_title: (0, Localize)("xplot.view.connect.workspace.delete.title"),
-            rdesktop_title: (0, Localize)("xplot.view.connect.rdesktop.title"),
-            rdesktop_active_title: (0, Localize)("xplot.view.connect.rdesktop.active.title"),
-            rdesktop_fullscreen_title: (0, Localize)("xplot.view.connect.rdesktop.fullscreen.title"),
-            rdesktop_mode_title: (0, Localize)("xplot.view.connect.rdesktop.mode.title"),
-            rdesktop_port_title: (0, Localize)("xplot.view.connect.rdesktop.port.title"),
-            rdesktop_colordepth_title: (0, Localize)("xplot.view.connect.rdesktop.colordepth.title"),
-            rdesktop_desktopgeometry_title: (0, Localize)("xplot.view.connect.rdesktop.desktopgeometry.title"),
+            tab_host_info_title: (0, Localize)("sshtool.view.connect.tab.host.info.title"),
+            connect_err_title: (0, Localize)("sshtool.view.connect.connect.err.title"),
+            connect_name_title: (0, Localize)("sshtool.view.connect.connect.name.title"),
+            connect_name_placeholder_title: (0, Localize)("sshtool.view.connect.connect.name.placeholder.title"),
+            host_title: (0, Localize)("sshtool.view.connect.host.title"),
+            host_placeholder_title: (0, Localize)("sshtool.view.connect.host.placeholder.title"),
+            port_title: (0, Localize)("sshtool.view.connect.port.title"),
+            port_placeholder_title: (0, Localize)("sshtool.view.connect.port.placeholder.title"),
+            user_title: (0, Localize)("sshtool.view.connect.user.title"),
+            user_placeholder_title: (0, Localize)("sshtool.view.connect.user.placeholder.title"),
+            group_title: (0, Localize)("sshtool.view.connect.group.title"),
+            group_placeholder_title: (0, Localize)("sshtool.view.connect.group.placeholder.title"),
+            ostype_title: (0, Localize)("sshtool.view.connect.ostype.title"),
+            ostype_windows_description: (0, Localize)("sshtool.view.connect.ostype.windows.description"),
+            type_title: (0, Localize)("sshtool.view.connect.type.title"),
+            password_title: (0, Localize)("sshtool.view.connect.password.title"),
+            password_placeholder_title: (0, Localize)("sshtool.view.connect.password.placeholder.title"),
+            privatekey_title: (0, Localize)("sshtool.view.connect.privatekey.title"),
+            privatekey_placeholder_title: (0, Localize)("sshtool.view.connect.privatekey.placeholder.title"),
+            passphrase_title: (0, Localize)("sshtool.view.connect.passphrase.title"),
+            passphrase_placeholder_title: (0, Localize)("sshtool.view.connect.passphrase.placeholder.title"),
+            save_title: (0, Localize)("sshtool.view.connect.save.title"),
+            connect_title: (0, Localize)("sshtool.view.connect.connect.title"),
+            tab_workspace_name_title: (0, Localize)("sshtool.view.connect.tab.workspace.name.title"),
+            workspace_name_title: (0, Localize)("sshtool.view.connect.workspace.name.title"),
+            workspace_dir_title: (0, Localize)("sshtool.view.connect.workspace.dir.title"),
+            workspace_rename_title: (0, Localize)("sshtool.view.connect.workspace.rename.title"),
+            workspace_delete_title: (0, Localize)("sshtool.view.connect.workspace.delete.title"),
+            rdesktop_title: (0, Localize)("sshtool.view.connect.rdesktop.title"),
+            rdesktop_active_title: (0, Localize)("sshtool.view.connect.rdesktop.active.title"),
+            rdesktop_fullscreen_title: (0, Localize)("sshtool.view.connect.rdesktop.fullscreen.title"),
+            rdesktop_mode_title: (0, Localize)("sshtool.view.connect.rdesktop.mode.title"),
+            rdesktop_port_title: (0, Localize)("sshtool.view.connect.rdesktop.port.title"),
+            rdesktop_colordepth_title: (0, Localize)("sshtool.view.connect.rdesktop.colordepth.title"),
+            rdesktop_desktopgeometry_title: (0, Localize)("sshtool.view.connect.rdesktop.desktopgeometry.title"),
         };
         let viewicsvg = "";
         let viewtitle = "";
@@ -117,7 +118,7 @@ class SSHService {
         }
         else {
             viewicsvg = "add.svg";
-            viewtitle = `ssh://${(0, Localize)("xplot.conn.add.title")}`;
+            viewtitle = `ssh://${(0, Localize)("sshtool.conn.add.title")}`;
         }
         ViewManager.createWebviewPanel({
             iconPath: Util.getExtPath("resources", "images", "icons", viewicsvg),
@@ -143,14 +144,19 @@ class SSHService {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    SSHConn.get(sshi, false).then(() => {
+                    SSHConn.get(sshi, false).then(({ client }) => {
+                        sshi.status = SSHType.ONLINE;
+                        if (client) {
+                            client.end();
+                            client.destroy();
+                        }
                         this.persistSshInfo(sshi, content.type).then((saved) => {
                             if (!saved) {
-                                Console.info((0, Localize)("xplot.msg.conn.add.no", SSHVO.title(sshi)));
+                                Console.info((0, Localize)("sshtool.msg.conn.add.no", SSHVO.title(sshi)));
                                 return;
                             }
                             API.refresh();
-                            Console.info((0, Localize)("xplot.msg.conn.add.ok", SSHVO.title(sshi)));
+                            Console.info((0, Localize)("sshtool.msg.conn.add.ok", SSHVO.title(sshi)));
                             handler.panel.dispose();
                         }).catch(err => handler.emit('CONNECTION_ERROR', { titles: tis, msg: err.message }));
                     }).catch(err => {
@@ -198,7 +204,7 @@ class SSHService {
     parsPrivates2PrivateKey(sshi) {
         // 检查使用密码还是密钥，解析privates 赋值privateKey
         if (!sshi.ssh.password && sshi.ssh.privates) {
-            const title = (0, Localize)("xplot.view.connect.passphrase.save.title");
+            const title = (0, Localize)("sshtool.view.connect.passphrase.save.title");
             if (sshi.ssh.privates != title) {
                 sshi.ssh.privateKey = sshi.ssh.privates;
                 sshi.ssh.privates = "";

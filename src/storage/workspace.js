@@ -23,7 +23,7 @@ class WorkspaceDT extends BaseDT {
 
     static Init() {
         if (!this.workspaces) {
-            this.workspaces = this.context.globalState.get(CacheKey.XPLOT_CACHEKEY_DATA_WORKSPACE) || {};
+            this.workspaces = this.context.globalState.get(CacheKey.SSHTOOL_CACHEKEY_DATA_WORKSPACE) || {};
         }
     }
 
@@ -35,7 +35,7 @@ class WorkspaceDT extends BaseDT {
     }
 
     static update_workspaces(workspaces) {
-        this.context.globalState.update(CacheKey.XPLOT_CACHEKEY_DATA_WORKSPACE, workspaces);
+        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_WORKSPACE, workspaces);
         return true;
     }
 

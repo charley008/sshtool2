@@ -80,7 +80,7 @@ class SSHAPI {
         const forwards = sshvo.forwards;
         const workspaces = sshvo.workspaces;
         if (SSHVO.put(sshInfo)) {
-            Console.info((0, Localize)("xplot.msg.conn.add.ok", SSHVO.title(sshInfo)));
+            Console.info((0, Localize)("sshtool.msg.conn.add.ok", SSHVO.title(sshInfo)));
             for (let r in remotes) {
                 RemoteVO.put(remotes[r]);
             }
@@ -92,7 +92,7 @@ class SSHAPI {
             }
         }
         else {
-            Console.info((0, Localize)("xplot.msg.conn.add.no", SSHVO.title(sshInfo)));
+            Console.info((0, Localize)("sshtool.msg.conn.add.no", SSHVO.title(sshInfo)));
         }
     }
     // 批量导入sshvo  { [key: string]: SSHVO }
@@ -124,7 +124,7 @@ class SSHAPI {
         else if (that.contextValue == constant_1.NodeType.SSH_FILE) {
             filename = that.file.filename;
         }
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.rename.title", filename), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.file.rename.title", filename), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             const nameCheck = validateRemoteName(input);
@@ -138,17 +138,17 @@ class SSHAPI {
                 const rt = yield SSHConn.rename(that.info.ssh, that.fullPath, pathCheck.value);
                 if (rt) {
                     API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.rename.ok", filename, nameCheck.value));
+                    Console.info((0, Localize)("sshtool.msg.api.file.rename.ok", filename, nameCheck.value));
                 }
             }
             else {
-                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.rename.no", filename));
+                Console.info(nameCheck.message || (0, Localize)("sshtool.msg.api.file.rename.no", filename));
             }
         }));
     }
     //新建文件
     static new_file(that) {
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.file.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.file.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             const nameCheck = validateRemoteName(input);
@@ -175,11 +175,11 @@ class SSHAPI {
                 const rt = yield SSHConn.put(sshInfo, tempPath, pathCheck.value);
                 if (rt) {
                     API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.file.new.yes", nameCheck.value));
+                    Console.info((0, Localize)("sshtool.msg.api.file.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.file.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("sshtool.msg.api.file.new.no"));
             }
         }));
     }
@@ -192,8 +192,8 @@ class SSHAPI {
         else if (that.contextValue == constant_1.NodeType.SSH_FILE) {
             filename = that.file.filename;
         }
-        vscode.window.showQuickPick([(0, Localize)("xplot.yes"), (0, Localize)("xplot.no")], { placeHolder: (0, Localize)("xplot.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
-            if (str == (0, Localize)("xplot.yes")) {
+        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+            if (str == (0, Localize)("sshtool.yes")) {
                 const pathCheck = validateRemoteOperationPath(that.fullPath);
                 if (!pathCheck.ok) {
                     Console.warn(pathCheck.message);
@@ -203,18 +203,18 @@ class SSHAPI {
                     const rt = yield SSHConn.rmdir(that.info.ssh, pathCheck.value);
                     if (rt) {
                         API.refresh();
-                        Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
+                        Console.info((0, Localize)("sshtool.msg.api.file.delete.yes", that.fullPath));
                     }
                 }
                 else if (that.contextValue == constant_1.NodeType.SSH_FILE) {
                     const rt = yield SSHConn.delete(that.info.ssh, pathCheck.value);
                     if (rt) {
                         API.refresh();
-                        Console.info((0, Localize)("xplot.msg.api.file.delete.yes", that.fullPath));
+                        Console.info((0, Localize)("sshtool.msg.api.file.delete.yes", that.fullPath));
                     }
                 }
                 else {
-                    Console.warn((0, Localize)("xplot.msg.api.file.delete.err", that.contextValue));
+                    Console.warn((0, Localize)("sshtool.msg.api.file.delete.err", that.contextValue));
                 }
             }
         }));
@@ -227,12 +227,12 @@ class SSHAPI {
             const extName = path.extname(that.file.filename).toLowerCase();
             for (const ext of Settings.ProhibitFileExt) {
                 if (extName == ext) {
-                    Console.warn((0, Localize)("xplot.msg.api.file.open.err.fileext", extName));
+                    Console.warn((0, Localize)("sshtool.msg.api.file.open.err.fileext", extName));
                     return;
                 }
             }
             if (that.file.attrs.size > Settings.OpenFileMaxSize * 1048576) {
-                Console.warn((0, Localize)("xplot.msg.api.file.open.err.filemaxsize", that.file.filename, Settings.OpenFileMaxSize + "MB"));
+                Console.warn((0, Localize)("sshtool.msg.api.file.open.err.filemaxsize", that.file.filename, Settings.OpenFileMaxSize + "MB"));
                 return;
             }
             const keyDir = `${ssh.username}@${ssh.host}#${ssh.port}`;
@@ -245,7 +245,7 @@ class SSHAPI {
             const tempPath = yield fileManager_1.FileManager.record(`temp/${keyDir}${fullPath}`, null, fileManager_1.FileModel.WRITE);
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("xplot.msg.api.file.open.title", that.fullPath),
+                title: (0, Localize)("sshtool.msg.api.file.open.title", that.fullPath),
                 cancellable: true
             }, (progress, token) => {
                 return new Promise((resolve) => {
@@ -258,7 +258,7 @@ class SSHAPI {
                     let option = {
                         step: function (total_transferred, chunk, total) {
                             const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("xplot.msg.api.file.open.remaining", prettyBytes(total - total_transferred)) });
+                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.open.remaining", prettyBytes(total - total_transferred)) });
                             before = percentage;
                         }
                     };
@@ -271,7 +271,7 @@ class SSHAPI {
                                 Console.err(err);
                             }
                             else {
-                                Console.info((0, Localize)("xplot.msg.api.file.open.ok", that.fullPath, time));
+                                Console.info((0, Localize)("sshtool.msg.api.file.open.ok", that.fullPath, time));
                                 const hash_v = Util.fileHash(path.resolve(tempPath));
                                 Storage.set_temp_file_remote(tempPath, { remote: that.fullPath, ssh: sshInfo, hash: hash_v });
                                 vscode.commands.executeCommand('vscode.open', vscode.Uri.file(tempPath));
@@ -320,7 +320,7 @@ class SSHAPI {
                             flag = constant_1.NodeType.SSH_SOCKETS;
                         }
                         const cpath = currpath ? `${currpath}/${entry.filename}` : entry.filename;
-                        Console.info((0, Localize)("xplot.msg.api.file.download.filter", flag, cpath));
+                        Console.info((0, Localize)("sshtool.msg.api.file.download.filter", flag, cpath));
                     }
                 }
                 resolve(entrys);
@@ -334,7 +334,7 @@ class SSHAPI {
     static file_download(that) {
         var _a;
         if (that.contextValue == constant_1.NodeType.SSH_FOLDER || that.contextValue == constant_1.NodeType.SSH_WORKSPACE) {
-            vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
+            vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
                     const remoteCheck = validateRemoteOperationPath(that.fullPath);
@@ -372,7 +372,7 @@ class SSHAPI {
                     const entrys = (yield SSHAPI.file_verify(that.info.ssh, that.fullPath)) || [];
                     const entry_list_size = entrys.length;
                     if (entry_list_size == 0) {
-                        Console.info((0, Localize)("xplot.msg.api.file.download.null"));
+                        Console.info((0, Localize)("sshtool.msg.api.file.download.null"));
                     }
                     let curr_entry_index = 0;
                     for (const entry of entrys) {
@@ -387,7 +387,7 @@ class SSHAPI {
                         }
                         yield vscode.window.withProgress({
                             location: vscode.ProgressLocation.Notification,
-                            title: (0, Localize)("xplot.msg.api.file.download.title", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile}`),
+                            title: (0, Localize)("sshtool.msg.api.file.download.title", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile}`),
                             cancellable: true
                         }, (progress, token) => {
                             return new Promise((resolve) => {
@@ -406,10 +406,10 @@ class SSHAPI {
                                     str.on("progress", (progressData) => {
                                         if (progressData.percentage == 100) {
                                             resolve(null);
-                                            Console.info((0, Localize)("xplot.msg.api.file.download.ok", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile} to ${ldir}`, progressData.runtime + 1));
+                                            Console.info((0, Localize)("sshtool.msg.api.file.download.ok", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile} to ${ldir}`, progressData.runtime + 1));
                                             return;
                                         }
-                                        progress.report({ increment: progressData.percentage - before, message: (0, Localize)("xplot.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
+                                        progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
                                         before = progressData.percentage;
                                     });
                                     str.on("error", err => {
@@ -431,7 +431,7 @@ class SSHAPI {
         }
         else {
             const extName = (_a = (0, extname)(that.file.filename)) === null || _a === void 0 ? void 0 : _a.replace(".", "");
-            vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.filename), filters: { "Type": [extName] }, saveLabel: (0, Localize)("xplot.msg.conn.downloadfile") })
+            vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.filename), filters: { "Type": [extName] }, saveLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
                 .then((uri) => __awaiter(this, void 0, void 0, function* () {
                 if (uri) {
                     const remoteCheck = validateRemoteOperationPath(that.fullPath);
@@ -444,7 +444,7 @@ class SSHAPI {
                     var progressStream = require("../utils/progress-stream.js");
                     vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("xplot.msg.api.file.download.title", that.fullPath),
+                        title: (0, Localize)("sshtool.msg.api.file.download.title", that.fullPath),
                         cancellable: true
                     }, (progress, token) => {
                         return new Promise((resolve) => {
@@ -463,10 +463,10 @@ class SSHAPI {
                                 str.on("progress", (progressData) => {
                                     if (progressData.percentage == 100) {
                                         resolve(null);
-                                        Console.info((0, Localize)("xplot.msg.api.file.download.ok", that.fullPath, progressData.runtime + 1));
+                                        Console.info((0, Localize)("sshtool.msg.api.file.download.ok", that.fullPath, progressData.runtime + 1));
                                         return;
                                     }
-                                    progress.report({ increment: progressData.percentage - before, message: (0, Localize)("xplot.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
+                                    progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
                                     before = progressData.percentage;
                                 });
                                 str.on("error", err => {
@@ -488,7 +488,7 @@ class SSHAPI {
     }
     // 新建目录
     static new_folder(that) {
-        vscode.window.showInputBox({ placeHolder: (0, Localize)("xplot.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
+        vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
             input = input.trim();
             const nameCheck = validateRemoteName(input);
@@ -507,17 +507,17 @@ class SSHAPI {
                 const rt = yield SSHConn.mkdir(sshInfo, pathCheck.value);
                 if (rt) {
                     API.refresh();
-                    Console.info((0, Localize)("xplot.msg.api.folder.new.yes", nameCheck.value));
+                    Console.info((0, Localize)("sshtool.msg.api.folder.new.yes", nameCheck.value));
                 }
             }
             else {
-                Console.info(nameCheck.message || (0, Localize)("xplot.msg.api.folder.new.no"));
+                Console.info(nameCheck.message || (0, Localize)("sshtool.msg.api.folder.new.no"));
             }
         }));
     }
     // 上传文件
     static file_upload(that) {
-        vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, canSelectFolders: false, openLabel: (0, Localize)("xplot.msg.conn.uploadfile") })
+        vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, canSelectFolders: false, openLabel: (0, Localize)("sshtool.msg.conn.uploadfile") })
             .then((uri) => __awaiter(this, void 0, void 0, function* () {
             if (uri) {
                 const { sftp } = yield SSHConn.get(that.info.ssh);
@@ -535,7 +535,7 @@ class SSHAPI {
                     }
                     yield vscode.window.withProgress({
                         location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("xplot.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
+                        title: (0, Localize)("sshtool.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
                         cancellable: true
                     }, (progress, token) => {
                         return new Promise((resolve) => {
@@ -554,10 +554,10 @@ class SSHAPI {
                                 str.on("progress", (progressData) => {
                                     if (progressData.percentage == 100) {
                                         resolve(null);
-                                        Console.info((0, Localize)("xplot.msg.api.file.upload.ok", `[${curr_url_index}/${url_size}] ${targetPath}`, progressData.runtime + 1));
+                                        Console.info((0, Localize)("sshtool.msg.api.file.upload.ok", `[${curr_url_index}/${url_size}] ${targetPath}`, progressData.runtime + 1));
                                         return;
                                     }
-                                    progress.report({ increment: progressData.percentage - before, message: (0, Localize)("xplot.msg.api.file.upload.remaining", prettyBytes(progressData.remaining)) });
+                                    progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.upload.remaining", prettyBytes(progressData.remaining)) });
                                     before = progressData.percentage;
                                 });
                                 str.on("error", err => {
@@ -588,15 +588,15 @@ class SSHAPI {
                 qvo.label = forward.name;
                 let desc = null;
                 if (forward.forward.type == 0) {
-                    desc = (0, Localize)("xplot.view.forward.type.local.port.forward.title");
+                    desc = (0, Localize)("sshtool.view.forward.type.local.port.forward.title");
                     desc = `[${desc}]   [${forward.forward.localHost}:${forward.forward.localPort}] -> [${forward.forward.remoteHost}:${forward.forward.remotePort}]`;
                 }
                 else if (forward.forward.type == 1) {
-                    desc = (0, Localize)("xplot.view.forward.type.remote.port.forward.title");
+                    desc = (0, Localize)("sshtool.view.forward.type.remote.port.forward.title");
                     desc = `[${desc}]   [${forward.forward.localHost}:${forward.forward.localPort}] <- [${forward.forward.remoteHost}:${forward.forward.remotePort}]`;
                 }
                 else if (forward.forward.type == 2) {
-                    desc = (0, Localize)("xplot.view.forward.type.socks5proxy.title");
+                    desc = (0, Localize)("sshtool.view.forward.type.socks5proxy.title");
                     desc = `[${desc}]   [${forward.forward.localHost}:${forward.forward.localPort}]`;
                 }
                 if (desc) {
@@ -607,14 +607,14 @@ class SSHAPI {
             }
         }
         if (forwardArr.length == 0) {
-            Console.info((0, Localize)("xplot.msg.show.forward.list.null.title"));
+            Console.info((0, Localize)("sshtool.msg.show.forward.list.null.title"));
             return;
         }
         if (forwardArr.length == 1) {
             new ForwardService().start(forwardArr[0].forward.id);
             return;
         }
-        vscode.window.showQuickPick(forwardArr, { placeHolder: (0, Localize)("xplot.msg.show.forward.list.title") }).then(vo => {
+        vscode.window.showQuickPick(forwardArr, { placeHolder: (0, Localize)("sshtool.msg.show.forward.list.title") }).then(vo => {
             if (vo) {
                 new ForwardService().start(vo.forward.id);
             }
@@ -637,21 +637,21 @@ class SSHAPI {
                 }
             }
             if (remoteArr.length == 0) {
-                Console.info((0, Localize)("xplot.msg.show.remote.list.null.title"));
+                Console.info((0, Localize)("sshtool.msg.show.remote.list.null.title"));
                 return;
             }
             if (remoteArr.length == 1) {
                 new RemoteService().start(remoteArr[0].remote.id);
                 return;
             }
-            vscode.window.showQuickPick(remoteArr, { placeHolder: (0, Localize)("xplot.msg.show.remote.list.title") }).then(vo => {
+            vscode.window.showQuickPick(remoteArr, { placeHolder: (0, Localize)("sshtool.msg.show.remote.list.title") }).then(vo => {
                 if (vo) {
                     new RemoteService().start(vo.remote.id);
                 }
             });
         }
         catch (e) {
-            Console.warn((0, Localize)("xplot.msg.connect.rdesktop.active.no", SSHVO.title(sshInfo)));
+            Console.warn((0, Localize)("sshtool.msg.connect.rdesktop.active.no", SSHVO.title(sshInfo)));
         }
     }
     // 打开命令行窗口
@@ -744,19 +744,19 @@ class SSHAPI {
             if (sshs[id].status == constant_1.SSHType.ONLINE) {
             }
             else {
-                Console.warn((0, Localize)("xplot.msg.api.file.save.err", remotePath, id));
+                Console.warn((0, Localize)("sshtool.msg.api.file.save.err", remotePath, id));
                 return;
             }
             // console.log(tfHash,currtfHash) 
             if (currtfHash == tfHash) {
-                Console.info((0, Localize)("xplot.msg.api.file.save.ok", remotePath, 0.01));
+                Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, 0.01));
                 Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ssh: tssh, hash: currtfHash });
                 return;
             }
             const { sftp } = yield SSHConn.get(tssh);
             vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("xplot.msg.api.file.save.title", remotePath),
+                title: (0, Localize)("sshtool.msg.api.file.save.title", remotePath),
                 cancellable: true
             }, (progress, token) => {
                 return new Promise((resolve) => {
@@ -769,7 +769,7 @@ class SSHAPI {
                     let option = {
                         step: function (total_transferred, chunk, total) {
                             const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("xplot.msg.api.file.save.remaining", prettyBytes(total - total_transferred)) });
+                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.save.remaining", prettyBytes(total - total_transferred)) });
                             before = percentage;
                         }
                     };
@@ -782,7 +782,7 @@ class SSHAPI {
                                 Console.err(err);
                             }
                             else {
-                                Console.info((0, Localize)("xplot.msg.api.file.save.ok", remotePath, time));
+                                Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, time));
                                 Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ssh: tssh, hash: currtfHash });
                                 API.refresh();
                                 resolve(null);
@@ -801,7 +801,7 @@ class SSHAPI {
     // 删除某个配置信息
     static ssh_delete(info) {
         SSHVO.del(info.ssh.id);
-        Console.info((0, Localize)("xplot.msg.conn.delete.ok", SSHVO.title(info.ssh)));
+        Console.info((0, Localize)("sshtool.msg.conn.delete.ok", SSHVO.title(info.ssh)));
         API.refresh();
     }
     // 断开某个主机的连接
@@ -825,27 +825,27 @@ class SSHAPI {
             if (client) {
                 yield SSHConn.closeSSH(infovo.ssh);
                 state = true;
-                Console.info((0, Localize)("xplot.msg.conn.unlink.ok", title));
+                Console.info((0, Localize)("sshtool.msg.conn.unlink.ok", title));
             }
             if (!state) {
-                Console.info((0, Localize)("xplot.msg.conn.unlink.no", title));
+                Console.info((0, Localize)("sshtool.msg.conn.unlink.no", title));
             }
         });
     }
     // 添加工作区
     static workspace_add(infovo, name, dir) {
         if (WorkSpaceVO.put(new WorkSpaceInfo(infovo.ssh.id, name, new WorkSpace(dir), "desc"))) {
-            Console.info((0, Localize)("xplot.msg.api.workspace.add.ok", dir, name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.add.ok", dir, name));
             API.refresh();
         }
         else {
-            Console.info((0, Localize)("xplot.msg.api.workspace.add.no", name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.add.no", name));
         }
     }
     // 删除工作区
     static workspace_del(ws) {
         if (WorkSpaceVO.del(ws.id)) {
-            Console.info((0, Localize)("xplot.msg.api.workspace.delete.ok", WorkSpaceVO.title(ws)));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.delete.ok", WorkSpaceVO.title(ws)));
             API.refresh();
         }
     }
@@ -854,11 +854,11 @@ class SSHAPI {
         const wsvo = WorkSpaceVO.get(ws.id);
         wsvo.workspace.name = new_name;
         if (WorkSpaceVO.post(wsvo.workspace)) {
-            Console.info((0, Localize)("xplot.msg.api.workspace.modify.ok", ws.name, new_name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.modify.ok", ws.name, new_name));
             API.refresh();
         }
         else {
-            Console.info((0, Localize)("xplot.msg.api.workspace.modify.no", ws.name));
+            Console.info((0, Localize)("sshtool.msg.api.workspace.modify.no", ws.name));
         }
     }
     // 更新配置信息,更新后刷新视图

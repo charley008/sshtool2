@@ -171,17 +171,30 @@ class SSHConn {
                 Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
                 this.closeSSH(sshInfo);
             }, 8000);
-            const { client, sftp } = yield this.get(sshInfo);
-            sftp.readdir(rforder, (err, list) => {
+            try {
+                const { client, sftp } = yield this.get(sshInfo);
+                if (!sftp) {
+                    throw new Error("SFTP channel is not available");
+                }
+                sftp.readdir(rforder, (err, list) => {
+                    if (mark) {
+                        clearTimeout(mark);
+                        if (err) {
+                            Console.warn(`List ${SSHVO.title(sshInfo)} ${rforder} failed: ${err.message || err}`);
+                            resolve(null);
+                            return;
+                        }
+                        resolve(list);
+                    }
+                });
+            }
+            catch (err) {
                 if (mark) {
                     clearTimeout(mark);
-                    if (err) {
-                        resolve(null);
-                        return;
-                    }
-                    resolve(list);
+                    Console.warn(`List ${SSHVO.title(sshInfo)} ${rforder} failed: ${err.message || err}`);
+                    resolve(null);
                 }
-            });
+            }
         }));
     }
     static rename(sshInfo, oldname, newname) {

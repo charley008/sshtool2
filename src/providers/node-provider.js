@@ -53,10 +53,10 @@ class NodeProvider {
         this._onDidChangeTreeData.fire(null);
     }
     clearall() {
-        Util.confirm((0, Localize)("xplot.msg.clearall.alert"), () => {
+        Util.confirm((0, Localize)("sshtool.msg.clearall.alert"), () => {
             ConfigAPI.clear();
             API.refresh();
-            Console.info((0, Localize)("xplot.msg.clearall.ok"));
+            Console.info((0, Localize)("sshtool.msg.clearall.ok"));
         });
     }
     save_ssh(node) {
@@ -81,21 +81,21 @@ class NodeProvider {
     }
     delete(node) {
         if (constant_1.NodeType.GROUP == node.contextValue) {
-            Util.confirm(`${(0, Localize)("xplot.msg.conn.group.delete.alert", node.id)}?`, () => {
+            Util.confirm(`${(0, Localize)("sshtool.msg.conn.group.delete.alert", node.id)}?`, () => {
                 GroupAPI.group_delete(node.id);
-                Console.info((0, Localize)("xplot.msg.group.delete.ok", node.id));
+                Console.info((0, Localize)("sshtool.msg.group.delete.ok", node.id));
             });
         }
         else {
             if (node.info.type == constant_1.Type.SSH) {
                 const sshInfo = node.info.ssh;
-                Util.confirm(`${(0, Localize)("xplot.msg.conn.delete.alert")} ${SSHVO.title(sshInfo)}?`, () => {
+                Util.confirm(`${(0, Localize)("sshtool.msg.conn.delete.alert")} ${SSHVO.title(sshInfo)}?`, () => {
                     SSHAPI.ssh_delete(node.info);
                 });
             }
             if (node.info.type == constant_1.Type.FTP) {
                 const sshInfo = node.info.ftp;
-                Util.confirm(`${(0, Localize)("xplot.msg.conn.delete.alert")} ${FTPVO.title(sshInfo)}?`, () => {
+                Util.confirm(`${(0, Localize)("sshtool.msg.conn.delete.alert")} ${FTPVO.title(sshInfo)}?`, () => {
                     FTPAPI.ftp_delete(node.info);
                 });
             }

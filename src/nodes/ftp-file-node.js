@@ -32,7 +32,7 @@ class FTPFileNode extends AbstractNode {
         // this.parentName = pn.charAt(pn.length-1) == '/' ? pn : pn + "/"; 
         this.fullPath = parentName + file.name;
         this.command = {
-            command: "xplot.file.open",
+            command: "sshtools2.file.open",
             arguments: [this],
             title: "Open File"
         };

@@ -42,11 +42,11 @@ const CacheKey = {
     TEMP_STATUS_BAR: "ssh.tmp.statusbar",
     TEMP_KEYS: "ssh.tmp.keys",
     SSH_HOST_KEYS: "ssh.host.keys",
-    XPLOT_CACHEKEY_DATA_SSH: "xplot.cn.cachekey.data.ssh",
-    XPLOT_CACHEKEY_DATA_WORKSPACE: "xplot.cn.cachekey.data.workspace",
-    XPLOT_CACHEKEY_DATA_FORWARD: "xplot.cn.cachekey.data.forward",
-    XPLOT_CACHEKEY_DATA_REMOTE: "xplot.cn.cachekey.data.remote",
-    XPLOT_CACHEKEY_DATA_FTP: "xplot.cn.cachekey.data.ftp",
+    SSHTOOL_CACHEKEY_DATA_SSH: "sshtools2.cachekey.data.ssh",
+    SSHTOOL_CACHEKEY_DATA_WORKSPACE: "sshtools2.cachekey.data.workspace",
+    SSHTOOL_CACHEKEY_DATA_FORWARD: "sshtools2.cachekey.data.forward",
+    SSHTOOL_CACHEKEY_DATA_REMOTE: "sshtools2.cachekey.data.remote",
+    SSHTOOL_CACHEKEY_DATA_FTP: "sshtools2.cachekey.data.ftp",
 };
 
 const ViewType = {
@@ -61,14 +61,14 @@ const OSTypes = {
 };
 
 const Command = {
-    REFRESH: "xplot.refresh",
-    ONLINE_REFRESH: "xplot.online.refresh",
-    OFFLINE_REFRESH: "xplot.offline.refresh",
-    MANAGER_REFRESH: "xplot.manager.refresh",
-    WORKSPACE_ONLINE_REFRESH: "xplot.workspace.online.refresh",
-    WORKSPACE_OFFLINE_REFRESH: "xplot.workspace.offline.refresh",
-    AUTOICMP: "xplot.autoicmp",
-    GROUPS_LIST: "xplot.groups.list",
+    REFRESH: "sshtools2.refresh",
+    ONLINE_REFRESH: "sshtools2.online.refresh",
+    OFFLINE_REFRESH: "sshtools2.offline.refresh",
+    MANAGER_REFRESH: "sshtools2.manager.refresh",
+    WORKSPACE_ONLINE_REFRESH: "sshtools2.workspace.online.refresh",
+    WORKSPACE_OFFLINE_REFRESH: "sshtools2.workspace.offline.refresh",
+    AUTOICMP: "sshtools2.autoicmp",
+    GROUPS_LIST: "sshtools2.groups.list",
     ADD_SSH: "add.ssh",
     ADD_FTP: "add.ftp",
 };

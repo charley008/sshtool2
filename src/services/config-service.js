@@ -78,19 +78,19 @@ class ConfigService {
         ViewManager.createWebviewPanel({
             iconPath: _utl.Util.getExtPath("resources", "images", "icons", "config.svg"),
             path: "app",
-            title: Localize("xplot.config.title"),
+            title: Localize("sshtool.config.title"),
             splitView: false,
             singlePage: true,
             killHidden: true,
             eventHandler: (handler) => {
                 const titles = {
-                    import_title: Localize("xplot.view.config.import.title"),
-                    export_title: Localize("xplot.view.config.expor.title"),
-                    local_title: Localize("xplot.view.config.local.title"),
-                    file_title: Localize("xplot.view.config.file.title"),
-                    target_title: Localize("xplot.view.config.target.title"),
-                    openfile_title: Localize("xplot.view.config.openfile.title"),
-                    placeholder_title: Localize("xplot.view.config.placeholder.title"),
+                    import_title: Localize("sshtool.view.config.import.title"),
+                    export_title: Localize("sshtool.view.config.expor.title"),
+                    local_title: Localize("sshtool.view.config.local.title"),
+                    file_title: Localize("sshtool.view.config.file.title"),
+                    target_title: Localize("sshtool.view.config.target.title"),
+                    openfile_title: Localize("sshtool.view.config.openfile.title"),
+                    placeholder_title: Localize("sshtool.view.config.placeholder.title"),
                 };
 
                 handler
@@ -116,7 +116,7 @@ class ConfigService {
                             .showSaveDialog({
                                 defaultUri: vscode.Uri.file(`sshtools_${ts}.db`),
                                 filters: { 'SSH Tools Config': ['db'] },
-                                saveLabel: Localize("xplot.msg.export.select.folder"),
+                                saveLabel: Localize("sshtool.msg.export.select.folder"),
                             })
                             .then(async (uri) => {
                                 if (uri) {
@@ -126,7 +126,7 @@ class ConfigService {
                                         includeSensitive: true,
                                         password: content.password,
                                     });
-                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
+                                    vscode.window.showInformationMessage(Localize("sshtool.msg.export.ok") + ' ' + filePath);
                                 }
                             });
                     })
@@ -150,7 +150,7 @@ class ConfigService {
                                         password: content.password,
                                         plainJson: true,
                                     });
-                                    vscode.window.showInformationMessage(Localize("xplot.msg.export.ok") + ' ' + filePath);
+                                    vscode.window.showInformationMessage(Localize("sshtool.msg.export.ok") + ' ' + filePath);
                                 }
                             });
                     })
@@ -165,7 +165,7 @@ class ConfigService {
                                 canSelectMany: false,
                                 canSelectFolders: false,
                                 filters: { "SSH Tools Config": ["db", "json"] },
-                                openLabel: Localize("xplot.msg.import.select.file"),
+                                openLabel: Localize("sshtool.msg.import.select.file"),
                             })
                             .then(async (uri) => {
                                 if (uri && uri[0]) {

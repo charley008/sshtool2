@@ -44,7 +44,7 @@ const webviewConfig = {
   entry: path.resolve(__dirname, "src/webview/main.js"),
   output: {
     path: path.resolve(__dirname, "out/webview/js"),
-    filename: "app.xplot.js",
+    filename: "app.js",
     clean: true,
   },
   resolve: {

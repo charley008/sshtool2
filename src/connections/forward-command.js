@@ -101,21 +101,21 @@ class ForwardCommand {
         return this.start({
             flag: "-L",
             value: `${assertSafeHost(forward.localHost, "Local host")}:${assertPort(forward.localPort, "Local port")}:${assertSafeHost(forward.remoteHost, "Target host")}:${assertPort(forward.remotePort, "Target port")}`,
-        }, "xplot.view.forward.type.local.port.forward.title");
+        }, "sshtool.view.forward.type.local.port.forward.title");
     }
     remoteforwarding() {
         const forward = this.vo.forward.forward;
         return this.start({
             flag: "-R",
             value: `${assertSafeHost(forward.remoteHost, "Remote host")}:${assertPort(forward.remotePort, "Remote port")}:${assertSafeHost(forward.localHost, "Local host")}:${assertPort(forward.localPort, "Local port")}`,
-        }, "xplot.view.forward.type.remote.port.forward.title");
+        }, "sshtool.view.forward.type.remote.port.forward.title");
     }
     socks5Proxy() {
         const forward = this.vo.forward.forward;
         return this.start({
             flag: "-D",
             value: `${assertSafeHost(forward.localHost, "Local host")}:${assertPort(forward.localPort, "Local port")}`,
-        }, "xplot.view.forward.type.socks5proxy.title");
+        }, "sshtool.view.forward.type.socks5proxy.title");
     }
 }
 exports.ForwardCommand = ForwardCommand;

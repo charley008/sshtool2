@@ -95,7 +95,7 @@ class LinkNode extends AbstractNode {
                 resolve(SSHAPI.build_children(that, list, parent));
             }
             else {
-                resolve([new InfoNode((0, Localize)("xplot.timeout"))]);
+                resolve([new InfoNode((0, Localize)("sshtool.timeout"))]);
             }
         }));
     }

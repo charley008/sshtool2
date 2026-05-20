@@ -41,7 +41,7 @@ class ServiceManager {
         if (!BaseDT.context) console.error('[SSH Tools] BaseDT.context not set after init!');
         if (!SSHDT.context) console.error('[SSH Tools] SSHDT.context not set after init!');
         this._disposables.push(vscode.workspace.onDidChangeConfiguration(event => {
-            if (event.affectsConfiguration('XPLOTTools')) {
+            if (event.affectsConfiguration('SSHTOOLTools')) {
                 Settings.reload();
             }
         }));
@@ -53,26 +53,26 @@ class ServiceManager {
             return [];
         const res = [];
         this.onlineProvider = new OnlineProvider();
-        const treeview_online = vscode.window.createTreeView("xplot.online", {
+        const treeview_online = vscode.window.createTreeView("sshtools2.online", {
             treeDataProvider: this.onlineProvider
         });
         this.offlineProvider = new OfflineProvider();
-        const treeview_offline = vscode.window.createTreeView("xplot.offline", {
+        const treeview_offline = vscode.window.createTreeView("sshtools2.offline", {
             treeDataProvider: this.offlineProvider
         });
         this.managerProvider = new ManagerProvider();
-        const treeview_manager = vscode.window.createTreeView("xplot.manager", {
+        const treeview_manager = vscode.window.createTreeView("sshtools2.manager", {
             treeDataProvider: this.managerProvider
         });
         res.push(treeview_online);
         res.push(treeview_offline);
         res.push(treeview_manager);
         this.onlineWorkspaceProvider = new OnlineWorkspaceProvider();
-        const treeview_workspace_online = vscode.window.createTreeView("xplot.workspace.online", {
+        const treeview_workspace_online = vscode.window.createTreeView("sshtools2.workspace.online", {
             treeDataProvider: this.onlineWorkspaceProvider
         });
         this.offlineWorkspaceProvider = new OfflineWorkspaceProvider();
-        const treeview_workspace_offline = vscode.window.createTreeView("xplot.workspace.offline", {
+        const treeview_workspace_offline = vscode.window.createTreeView("sshtools2.workspace.offline", {
             treeDataProvider: this.offlineWorkspaceProvider
         });
         res.push(treeview_workspace_online);

@@ -2,7 +2,8 @@
 
 const crypto = require("crypto");
 
-const SECURE_EXPORT_FORMAT = "sshtools.secure-config";
+const SECURE_EXPORT_FORMAT = "sshtools2.secure-config";
+const LEGACY_SECURE_EXPORT_FORMATS = ["sshtools.secure-config"];
 const SECURE_EXPORT_VERSION = 1;
 const KDF_ITERATIONS = 210000;
 
@@ -38,7 +39,9 @@ function createEncryptedExport(configvos, password) {
 }
 
 function isEncryptedExport(value) {
-    return !!value && typeof value === "object" && value.format === SECURE_EXPORT_FORMAT;
+    return !!value
+        && typeof value === "object"
+        && (value.format === SECURE_EXPORT_FORMAT || LEGACY_SECURE_EXPORT_FORMATS.includes(value.format));
 }
 
 function decryptExport(value, password) {
