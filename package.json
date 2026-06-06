@@ -649,6 +649,7 @@
     "@xterm/addon-search": "^0.16.0",
     "@xterm/addon-web-links": "^0.12.0",
     "@xterm/xterm": "^6.0.0",
+    "basic-ftp": "^6.0.1",
     "debug": "^4.4.3",
     "element-plus": "^2.13.7",
     "fs-extra": "^11.3.5",
