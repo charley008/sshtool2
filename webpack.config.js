@@ -69,10 +69,6 @@ const webviewConfig = {
     new CopyWebpackPlugin({
       patterns: [
         {
-          from: path.resolve(__dirname, "public/index.html"),
-          to: path.resolve(__dirname, "out/webview/index.html"),
-        },
-        {
           from: path.resolve(__dirname, "public/app.html"),
           to: path.resolve(__dirname, "out/webview/app.html"),
         },
