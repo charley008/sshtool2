@@ -23,6 +23,7 @@ class FTPDT extends BaseDT {
             user: "root",
             password: "",
             secure: false,
+            ostype: "linux",
         }, ftp.ftp || {});
         ftp.name = ftp.name || `${ftp.ftp.user || "anonymous"}@${ftp.ftp.host || "unknown"}`;
         return ftp;

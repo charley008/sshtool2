@@ -22,12 +22,25 @@ class FTPNode extends Node {
         this.description = FTPVO.title(fInfo);
         this.viewType = constant_1.ViewType.HOST;
         this.contextValue = constant_1.NodeType.FTP;
+        let ostype = "linux";
+        if (constant_1.OSTypes.WINDOWS == fInfo.ftp.ostype) {
+            ostype = "windows";
+        }
+        else if (constant_1.OSTypes.DARWIN == fInfo.ftp.ostype) {
+            ostype = "darwin";
+        }
+        else if (fInfo.ftp.ostype == "debian") {
+            ostype = "debian";
+        }
+        else if (fInfo.ftp.ostype == "ubuntu") {
+            ostype = "ubuntu";
+        }
         if (fInfo.status == constant_1.SSHType.OFFLINE) {
             this.collapsibleState = 0;
-            this.iconPath = path.join(_sm.default.context.extensionPath, 'resources', 'images', `node-ftp-offline.svg`);
+            this.iconPath = path.join(_sm.default.context.extensionPath, 'resources', 'images', `node-${ostype}-offline.svg`);
         }
         else {
-            this.iconPath = path.join(_sm.default.context.extensionPath, 'resources', 'images', `node-ftp-online.svg`);
+            this.iconPath = path.join(_sm.default.context.extensionPath, 'resources', 'images', `node-${ostype}-online.svg`);
         }
     }
 }

@@ -143,7 +143,7 @@ function defaultConnection(kind) {
       group: "default",
       status: 1,
       description: "",
-      ftp: { host: "127.0.0.1", port: 21, user: "root", password: "", secure: false },
+      ftp: { host: "127.0.0.1", port: 21, user: "root", password: "", secure: false, ostype: "linux" },
     };
   }
   return {
@@ -236,6 +236,9 @@ const ConnectionPage = defineComponent({
       if (incoming?.[key]) {
         Object.assign(info[key], incoming[key]);
       }
+      if (props.kind === "ftp") {
+        info.ftp = Object.assign(defaultConnection("ftp").ftp, info.ftp || {});
+      }
       if (props.kind === "ssh") {
         info.ssh = Object.assign(defaultConnection("ssh").ssh, info.ssh || {});
         info.ssh.jump = Object.assign({ enabled: false, sshId: "" }, info.ssh.jump || {});
@@ -301,7 +304,7 @@ const ConnectionPage = defineComponent({
             </el-select>
           </el-form-item>
           <el-form-item label="描述"><el-input v-model="info.description" /></el-form-item>
-          <el-form-item label="系统" v-if="kind === 'ssh'">
+          <el-form-item label="系统">
             <el-select v-model="conn.ostype">
               <el-option label="Linux" value="linux" />
               <el-option label="Ubuntu" value="ubuntu" />
