@@ -12,7 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 
-const fs = require("./fs-extra-runtime.js");
+const fs = require("fs-extra");
 const path = require("path");
 const vscode = require("vscode");
 const { Console } = require("../ui/console.js");

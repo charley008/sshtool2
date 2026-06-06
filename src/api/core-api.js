@@ -14,7 +14,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 
 const vscode = require("vscode");
 const path = require("path");
-const fs = require("../utils/graceful-fs-runtime.js");
+const fs = require("fs-extra");
 const net = require("net");
 const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");

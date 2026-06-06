@@ -12,19 +12,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 
 const fileManager_1 = require("../utils/file-manager.js");
-const dayjs = require("../utils/dayjs-runtime.js");
-const fs = require("../utils/fs-extra-runtime.js");
+const fs = require("fs-extra");
 const path = require("path");
 const vscode = require("vscode");
 const Localize = require("./localize.js").default;
 const constant_1 = require("../shared/constants.js");
 const { Storage } = require("../storage/storage.js");
+
+function pad(value, length = 2) {
+    return String(value).padStart(length, "0");
+}
+
+function formatDate(date = new Date(), includeMilliseconds = false) {
+    const text = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+    if (!includeMilliseconds) {
+        return text;
+    }
+    return `${text} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}.${pad(date.getMilliseconds(), 3)}`;
+}
+
 class Console {
     static log(value) {
         if (this.outputChannel == null) {
             this.outputChannel = vscode.window.createOutputChannel((0, Localize)("sshtool.title"));
         }
-        const date = dayjs().format('YYYY-MM-DD HH:mm:ss.SSS');
+        const date = formatDate(new Date(), true);
         const keys = Storage.get_status_keys();
         if (keys[constant_1.ConsoleOutputSwitch.KEY] == constant_1.ConsoleOutputSwitch.ON) {
             this.outputChannel.show(true);
@@ -54,7 +66,7 @@ class Console {
         }
         const keys = Storage.get_status_keys();
         const str = `[DEBUG] ${msg}`;
-        const date = dayjs().format('YYYY-MM-DD HH:mm:ss.SSS');
+        const date = formatDate(new Date(), true);
         const logStr = `[${date}] ${str}`;
         if (keys[constant_1.DebugSwitch.KEY] == constant_1.DebugSwitch.ON) {
             this.outputChannel.appendLine(logStr);
@@ -65,7 +77,7 @@ class Console {
         return __awaiter(this, void 0, void 0, function* () {
             const keys = Storage.get_status_keys();
             if (keys[constant_1.DebugSwitch.KEY] == constant_1.DebugSwitch.ON) {
-                const logFile = `${dayjs().format('YYYY-MM-DD')}.log`;
+                const logFile = `${formatDate()}.log`;
                 const logFilePath = yield fileManager_1.FileManager.record(`logs/${logFile}`, `${msg}\n`, fileManager_1.FileModel.APPEND);
                 const logDir = path.resolve(logFilePath, '..');
                 const files = fs.readdirSync(logDir);

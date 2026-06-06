@@ -12,7 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 
-const { Client } = require("./ssh2-runtime.js");
+const { Client } = require("ssh2");
 const { Console } = require("../ui/console.js");
 const { SSHVO } = require("../models/ssh-model.js");
 const { SSHCredentialService } = require("../services/ssh-credential-service.js");

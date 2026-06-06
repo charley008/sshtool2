@@ -13,7 +13,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 
 const net = require("net");
-const debug = require("../utils/debug-runtime.js");
+const debug = require("debug");
 const { Storage } = require("../storage/storage.js");
 const { ForwardVO } = require("../models/forward-model.js");
 const { SSHConn } = require("./ssh-connection.js");

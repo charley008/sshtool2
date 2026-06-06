@@ -2,7 +2,7 @@
 // Recovered module id: 58
 "use strict";
 
-const fs = require("../utils/fs-extra-runtime.js");
+const fs = require("fs-extra");
 const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
 const { Util } = require("../utils/util.js");

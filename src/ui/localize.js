@@ -2,7 +2,7 @@
 // Recovered module id: 3
 "use strict";
 
-const fs_extra_1 = require("../utils/fs-extra-runtime.js");
+const fs_extra_1 = require("fs-extra");
 const { resolve } = require("path");
 const { extensions } = require("vscode");
 class Localize {
