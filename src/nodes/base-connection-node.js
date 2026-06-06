@@ -63,10 +63,13 @@ class Node extends AbstractNode {
             SSHAPI.start_socks5_proxy(this.info.ssh);
         }
     }
-    fowardPort() {
+    forwardPort() {
         if (this.info.type == Type.SSH) {
             new ForwardService().createForwardView(this.info.ssh);
         }
+    }
+    fowardPort() {
+        this.forwardPort();
     }
     workspaceManagement() {
         new WorkSpaceService().createWorkSpaceView(this.info);
@@ -120,10 +123,13 @@ class Node extends AbstractNode {
             SSHAPI.open_terminal(this.info.ssh);
         }
     }
-    openInTeriminal() {
+    openInTerminal() {
         if (this.info.type == Type.SSH) {
-            SSHAPI.open_in_teriminal(this.info.ssh, this.fullPath);
+            SSHAPI.open_in_terminal(this.info.ssh, this.fullPath);
         }
+    }
+    openInTeriminal() {
+        this.openInTerminal();
     }
     getChildren() {
         const that = this;

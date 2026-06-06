@@ -65,10 +65,13 @@ class FileNode extends AbstractNode {
     download() {
         SSHAPI.file_download(this);
     }
-    openInTeriminal() {
+    openInTerminal() {
         if (this.info.type == constant_1.Type.SSH) {
-            SSHAPI.open_in_teriminal(this.info.ssh, this.fullPath);
+            SSHAPI.open_in_terminal(this.info.ssh, this.fullPath);
         }
+    }
+    openInTeriminal() {
+        this.openInTerminal();
     }
 }
 exports.FileNode = FileNode;

@@ -660,9 +660,12 @@ class SSHAPI {
         terminalService.openMethod(sshInfo);
     }
     // 打开所选目录命令行窗口
-    static open_in_teriminal(sshInfo, fullPath) {
+    static open_in_terminal(sshInfo, fullPath) {
         let terminalService = new XtermTerminal();
         terminalService.openPath(sshInfo, fullPath);
+    }
+    static open_in_teriminal(sshInfo, fullPath) {
+        this.open_in_terminal(sshInfo, fullPath);
     }
     //根据文件类型，细化处理
     static build_children(that, entryList, parentName) {

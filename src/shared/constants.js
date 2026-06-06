@@ -114,11 +114,13 @@ const RDesktopMode = {
     VNC: 1,
 };
 
-const ConsoleOututSwitch = {
+const ConsoleOutputSwitch = {
     KEY: "ConsoleOututSwitch",
     ON: "ON",
     OFF: "OFF",
 };
+
+const ConsoleOututSwitch = ConsoleOutputSwitch;
 
 const DebugSwitch = {
     KEY: "DebugSwitch",
@@ -129,6 +131,7 @@ const DebugSwitch = {
 module.exports = {
     CacheKey,
     Command,
+    ConsoleOutputSwitch,
     ConsoleOututSwitch,
     DebugSwitch,
     ForwardMode,

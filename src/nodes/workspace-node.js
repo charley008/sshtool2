@@ -94,7 +94,7 @@ class WorkspaceNode extends Node {
     }
     openTerminal() {
         if (this.info.type == constant_1.Type.SSH) {
-            SSHAPI.open_in_teriminal(this.info.ssh, this.fullPath);
+            SSHAPI.open_in_terminal(this.info.ssh, this.fullPath);
         }
     }
 }

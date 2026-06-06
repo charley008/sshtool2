@@ -5,7 +5,7 @@ const vscode = require('vscode');
 
 // ---- 模块加载（逐个try-catch定位问题） ----
 let ServiceManager, API, GroupAPI, ConfigAPI, Console, Constants;
-let Command = {}, ConsoleOututSwitch = {}, DebugSwitch = {}, StatusBar = {};
+let Command = {}, ConsoleOutputSwitch = {}, DebugSwitch = {}, StatusBar = {};
 let loadErrors = [];
 
 try { ServiceManager = require('./services/service-manager').default; }
@@ -28,7 +28,7 @@ catch (e) { loadErrors.push('Constants: ' + e.message); }
 
 if (Constants) {
     Command = Constants.Command || {};
-    ConsoleOututSwitch = Constants.ConsoleOututSwitch || {};
+    ConsoleOutputSwitch = Constants.ConsoleOutputSwitch || Constants.ConsoleOututSwitch || {};
     DebugSwitch = Constants.DebugSwitch || {};
     StatusBar = Constants.StatusBar || {};
 }
@@ -76,7 +76,7 @@ function activate(context) {
     const cmdList = [];
     const add = (id, fn) => { if (id && fn) cmdList.push([id, fn]); };
     if (!Command) Command = {};
-    if (!ConsoleOututSwitch) ConsoleOututSwitch = {};
+    if (!ConsoleOutputSwitch) ConsoleOutputSwitch = {};
     if (!DebugSwitch) DebugSwitch = {};
     if (!StatusBar) StatusBar = {};
 
@@ -97,11 +97,11 @@ function activate(context) {
     add('sshtools2.copy.scp.path', (node) => node && node.copySCPPath());
     add('sshtools2.file.new', (node) => node && node.newFile());
     add('sshtools2.host.copy', (node) => node && node.copySSHCommand());
-    add('sshtools2.forward.port', (node) => node && node.fowardPort());
+    add('sshtools2.forward.port', (node) => node && node.forwardPort());
     add('sshtools2.workspace.management', (node) => node && node.workspaceManagement());
     add('sshtools2.remote.management', (node) => node && node.remoteManagement());
     add('sshtools2.file.upload', (node) => node && node.upload());
-    add('sshtools2.folder.open', (node) => node && node.openInTeriminal());
+    add('sshtools2.folder.open', (node) => node && node.openInTerminal());
     add('sshtools2.socks.port', (node) => node && node.startSocksProxy());
     add('sshtools2.file.delete', (node) => node && node.delete());
     add('sshtools2.rename', (node) => node && node.rename());
@@ -123,8 +123,8 @@ function activate(context) {
     add('sshtools2.group.rename', (node) => node && node.groupRename(node));
     add('sshtools2.group.in', (node) => node && node.groupIn(node));
     add('sshtools2.group.out', () => GroupAPI && GroupAPI.to_groups_list_by_name(StatusBar.ALL));
-    add('sshtools2.console.switch.on', () => API && API.console_output_switch(ConsoleOututSwitch.KEY));
-    add('sshtools2.console.switch.off', () => API && API.console_output_switch(ConsoleOututSwitch.KEY));
+    add('sshtools2.console.switch.on', () => API && API.console_output_switch(ConsoleOutputSwitch.KEY));
+    add('sshtools2.console.switch.off', () => API && API.console_output_switch(ConsoleOutputSwitch.KEY));
     add('sshtools2.debug.on', () => API && API.console_output_switch(DebugSwitch.KEY));
     add('sshtools2.debug.off', () => API && API.console_output_switch(DebugSwitch.KEY));
 

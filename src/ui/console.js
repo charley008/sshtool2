@@ -26,7 +26,7 @@ class Console {
         }
         const date = dayjs().format('YYYY-MM-DD HH:mm:ss.SSS');
         const keys = Storage.get_status_keys();
-        if (keys[constant_1.ConsoleOututSwitch.KEY] == constant_1.ConsoleOututSwitch.ON) {
+        if (keys[constant_1.ConsoleOutputSwitch.KEY] == constant_1.ConsoleOutputSwitch.ON) {
             this.outputChannel.show(true);
         }
         else {

@@ -26,7 +26,7 @@ class ServiceManager {
         this.isInit = false;
         this._disposables = [];
         ServiceManager.context = context;
-        ViewManager.initExtesnsionPath(context.extensionPath);
+        ViewManager.initExtensionPath(context.extensionPath);
         FileManager.init(context);
         Storage.init(context);
         BaseDT.init(context);

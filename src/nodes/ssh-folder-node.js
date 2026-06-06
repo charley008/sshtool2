@@ -83,8 +83,11 @@ class FolderNode extends AbstractNode {
     openTerminal() {
         SSHAPI.open_terminal(this.info.ssh);
     }
+    openInTerminal() {
+        SSHAPI.open_in_terminal(this.info.ssh, this.fullPath);
+    }
     openInTeriminal() {
-        SSHAPI.open_in_teriminal(this.info.ssh, this.fullPath);
+        this.openInTerminal();
     }
     workspaceManagement() {
         new WorkSpaceService().createWorkSpaceView(this.info);

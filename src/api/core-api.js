@@ -67,8 +67,8 @@ class API {
     static init_keys() {
         Console.debug("api.ts func init_keys begin");
         const keys = Storage.get_status_keys();
-        if (!keys[constant_1.ConsoleOututSwitch.KEY]) {
-            keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.OFF;
+        if (!keys[constant_1.ConsoleOutputSwitch.KEY]) {
+            keys[constant_1.ConsoleOutputSwitch.KEY] = constant_1.ConsoleOutputSwitch.OFF;
         }
         if (!keys[constant_1.DebugSwitch.KEY]) {
             keys[constant_1.DebugSwitch.KEY] = constant_1.DebugSwitch.OFF;
@@ -79,7 +79,7 @@ class API {
             keys[constant_1.TempKeys.TEMP_KEYS_TerminalOptions] = options;
         }
         Storage.update_status_keys(keys);
-        vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', keys[constant_1.ConsoleOututSwitch.KEY]);
+        vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', keys[constant_1.ConsoleOutputSwitch.KEY]);
         vscode.commands.executeCommand('setContext', 'sshtools2.debug', keys[constant_1.DebugSwitch.KEY]);
         Console.debug("api.ts func init_keys end");
     }
@@ -111,20 +111,20 @@ class API {
     static console_output_switch(flag) {
         Console.debug("api.ts func console_output_switch begin");
         const keys = Storage.get_status_keys();
-        if (flag == constant_1.ConsoleOututSwitch.KEY) {
+        if (flag == constant_1.ConsoleOutputSwitch.KEY) {
             // 输出
-            if (keys[constant_1.ConsoleOututSwitch.KEY] == constant_1.ConsoleOututSwitch.ON) {
-                vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', constant_1.ConsoleOututSwitch.OFF);
-                keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.OFF;
+            if (keys[constant_1.ConsoleOutputSwitch.KEY] == constant_1.ConsoleOutputSwitch.ON) {
+                vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', constant_1.ConsoleOutputSwitch.OFF);
+                keys[constant_1.ConsoleOutputSwitch.KEY] = constant_1.ConsoleOutputSwitch.OFF;
                 Console.info((0, Localize)("sshtool.console.switch.off.title"));
             }
-            else if (keys[constant_1.ConsoleOututSwitch.KEY] == constant_1.ConsoleOututSwitch.OFF) {
-                vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', constant_1.ConsoleOututSwitch.ON);
-                keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.ON;
+            else if (keys[constant_1.ConsoleOutputSwitch.KEY] == constant_1.ConsoleOutputSwitch.OFF) {
+                vscode.commands.executeCommand('setContext', 'sshtools2.console.switch', constant_1.ConsoleOutputSwitch.ON);
+                keys[constant_1.ConsoleOutputSwitch.KEY] = constant_1.ConsoleOutputSwitch.ON;
                 Console.info((0, Localize)("sshtool.console.switch.on.title"));
             }
             else {
-                keys[constant_1.ConsoleOututSwitch.KEY] = constant_1.ConsoleOututSwitch.ON;
+                keys[constant_1.ConsoleOutputSwitch.KEY] = constant_1.ConsoleOutputSwitch.ON;
             }
         }
         if (flag == constant_1.DebugSwitch.KEY) {

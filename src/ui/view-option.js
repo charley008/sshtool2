@@ -13,7 +13,7 @@ class ViewOption {
     }
 }
 
-class Hanlder {
+class Handler {
     constructor(panel, eventEmitter) {
         this.panel = panel;
         this.eventEmitter = eventEmitter;
@@ -32,7 +32,7 @@ class Hanlder {
     }
 }
 
-const Handler = Hanlder;
+const Hanlder = Handler;
 
 class ViewManager {
     static initExtesnsionPath(extensionPath) {
@@ -75,7 +75,7 @@ class ViewManager {
                     }
                     currentStatus.eventEmitter.removeAllListeners();
                     if (viewOption.eventHandler) {
-                        viewOption.eventHandler(new Hanlder(currentStatus.instance, currentStatus.eventEmitter));
+                        viewOption.eventHandler(new Handler(currentStatus.instance, currentStatus.eventEmitter));
                     }
                     currentStatus.eventEmitter.emit("init");
                     return resolve(currentStatus.instance);
@@ -132,7 +132,7 @@ class ViewManager {
                 });
 
                 if (viewOption.eventHandler) {
-                    viewOption.eventHandler(new Hanlder(webviewPanel, newStatus.eventEmitter));
+                    viewOption.eventHandler(new Handler(webviewPanel, newStatus.eventEmitter));
                 }
 
                 webviewPanel.webview.onDidReceiveMessage((rawMessage) => {
@@ -163,7 +163,7 @@ class ViewManager {
                             }
                             newStatus.eventEmitter.removeAllListeners();
                             if (pendingViewOption.eventHandler) {
-                                pendingViewOption.eventHandler(new Hanlder(webviewPanel, newStatus.eventEmitter));
+                                pendingViewOption.eventHandler(new Handler(webviewPanel, newStatus.eventEmitter));
                             }
                             newStatus.eventEmitter.emit("init");
                         }
