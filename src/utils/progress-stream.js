@@ -1,100 +1,92 @@
-// Alias for module-0040
-// Recovered module id: 40
-var through = require("./through-runtime.js");
-var speedometer = require("./speedometer-runtime.js");
+"use strict";
 
-module.exports = function(options, onprogress) {
-	if (typeof options === 'function') return module.exports(null, options);
-	options = options || {};
+const { Transform } = require("stream");
 
-	var length = options.length || 0;
-	var time = options.time || 0;
-	var drain = options.drain || false;
-	var transferred = options.transferred || 0;
-	var nextUpdate = Date.now()+time;
-	var delta = 0;
-	var speed = speedometer(options.speed || 5000);
-	var startTime = Date.now();
+function progressStream(options, onprogress) {
+    if (typeof options === "function") {
+        return progressStream({}, options);
+    }
 
-	var update = {
-		percentage: 0,
-		transferred: transferred,
-		length: length,
-		remaining: length,
-		eta: 0,
-		runtime: 0
-	};
+    options = options || {};
+    let length = Number(options.length || 0);
+    const interval = Number(options.time || 0);
+    let transferred = Number(options.transferred || 0);
+    let delta = 0;
+    let nextUpdate = Date.now() + interval;
+    const startTime = Date.now();
 
-	var emit = function(ended) {
-		update.delta = delta;
-		update.percentage = ended ? 100 : (length ? transferred/length*100 : 0);
-		update.speed = speed(delta);
-		update.eta = Math.round(update.remaining / update.speed);
-		update.runtime = parseInt((Date.now() - startTime)/1000);
-		nextUpdate = Date.now()+time;
+    const update = {
+        percentage: 0,
+        transferred,
+        length,
+        remaining: length,
+        eta: 0,
+        runtime: 0,
+        delta: 0,
+        speed: 0,
+    };
 
-		delta = 0;
+    const stream = new Transform({
+        objectMode: !!options.objectMode,
+        transform(chunk, enc, callback) {
+            const size = options.objectMode ? 1 : chunk.length;
+            transferred += size;
+            delta += size;
+            update.transferred = transferred;
+            update.remaining = Math.max(length - transferred, 0);
 
-		tr.emit('progress', update);
-	};
-	var write = function(chunk, enc, callback) {
-		var len = options.objectMode ? 1 : chunk.length;
-		transferred += len;
-		delta += len;
-		update.transferred = transferred;
-		update.remaining = length >= transferred ? length - transferred : 0;
+            if (Date.now() >= nextUpdate) {
+                emitProgress(false);
+            }
+            callback(null, chunk);
+        },
+        flush(callback) {
+            emitProgress(true);
+            callback();
+        },
+    });
 
-		if (Date.now() >= nextUpdate) emit(false);
-		callback(null, chunk);
-	};
-	var end = function(callback) {
-		emit(true);
-		callback();
-	};
+    function emitProgress(ended) {
+        const runtimeMs = Math.max(Date.now() - startTime, 1);
+        const speed = transferred > 0 ? transferred / (runtimeMs / 1000) : 0;
+        update.delta = delta;
+        update.percentage = ended ? 100 : (length ? transferred / length * 100 : 0);
+        update.speed = speed;
+        update.eta = speed > 0 ? Math.round(update.remaining / speed) : 0;
+        update.runtime = Math.floor(runtimeMs / 1000);
+        nextUpdate = Date.now() + interval;
+        delta = 0;
+        stream.emit("progress", update);
+    }
 
-	var tr = through(options.objectMode ? {objectMode:true, highWaterMark:16} : {}, write, end);
-	var onlength = function(newLength) {
-		length = newLength;
-		update.length = length;
-		update.remaining = length - update.transferred;
-		tr.emit('length', length);
-	};
-	
-	// Expose `onlength()` handler as `setLength()` to support custom use cases where length
-	// is not known until after a few chunks have already been pumped, or is
-	// calculated on the fly.
-	tr.setLength = onlength;
-	
-	tr.on('pipe', function(stream) {
-		if (typeof length === 'number') return;
-		// Support http module
-		if (stream.readable && !stream.writable && stream.headers) {
-			return onlength(parseInt(stream.headers['content-length'] || 0));
-		}
+    stream.setLength = (newLength) => {
+        length = Number(newLength || 0);
+        update.length = length;
+        update.remaining = Math.max(length - update.transferred, 0);
+        stream.emit("length", length);
+    };
 
-		// Support streams with a length property
-		if (typeof stream.length === 'number') {
-			return onlength(stream.length);
-		}
+    stream.progress = () => {
+        emitProgress(false);
+        return update;
+    };
 
-		// Support request module
-		stream.on('response', function(res) {
-			if (!res || !res.headers) return;
-			if (res.headers['content-encoding'] === 'gzip') return;
-			if (res.headers['content-length']) {
-				return onlength(parseInt(res.headers['content-length']));
-			}
-		});
-	});
+    stream.on("pipe", (source) => {
+        if (length) {
+            return;
+        }
+        if (typeof source.length === "number") {
+            stream.setLength(source.length);
+        }
+    });
 
-	if (drain) tr.resume();
-	if (onprogress) tr.on('progress', onprogress);
+    if (onprogress) {
+        stream.on("progress", onprogress);
+    }
+    if (options.drain) {
+        stream.resume();
+    }
+    return stream;
+}
 
-	tr.progress = function() {
-		update.speed = speed(0);
-		update.eta = Math.round(update.remaining / update.speed);
-
-		return update;
-	};
-	return tr;
-};
+module.exports = progressStream;
