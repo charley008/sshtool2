@@ -2,13 +2,39 @@
 // Original module ids: 87 (FTPDAO) and 143 (FTPDT)
 "use strict";
 
-const { CacheKey } = require("../shared/constants.js");
+const { CacheKey, SSHType, Type } = require("../shared/constants.js");
 const { BaseDT } = require("./base-dt.js");
 
 /**
  * FTPDT - FTP Data Transfer Object for managing FTP configuration storage
  */
 class FTPDT extends BaseDT {
+    static normalize_ftp(ftp) {
+        if (!ftp) {
+            return ftp;
+        }
+        ftp.type = Type.FTP;
+        ftp.group = ftp.group || "default";
+        ftp.status = typeof ftp.status === "number" ? ftp.status : SSHType.OFFLINE;
+        ftp.description = ftp.description || "";
+        ftp.ftp = Object.assign({
+            host: "127.0.0.1",
+            port: 21,
+            user: "root",
+            password: "",
+            secure: false,
+        }, ftp.ftp || {});
+        ftp.name = ftp.name || `${ftp.ftp.user || "anonymous"}@${ftp.ftp.host || "unknown"}`;
+        return ftp;
+    }
+
+    static normalize_ftps(ftps) {
+        Object.keys(ftps || {}).forEach((id) => {
+            ftps[id] = this.normalize_ftp(ftps[id]);
+        });
+        return ftps || {};
+    }
+
     static rsort(rs) {
         const rt = {};
         const keys = Object.keys(rs).sort(function (a, b) {
@@ -29,6 +55,8 @@ class FTPDT extends BaseDT {
 
     static get_ftps() {
         this.Init();
+        this.ftps = this.normalize_ftps(this.ftps);
+        this.update_ftps(this.ftps);
         // 排序
         this.ftps = this.rsort(this.ftps);
         return this.ftps;
@@ -48,6 +76,7 @@ class FTPDT extends BaseDT {
 
     static update_ftp(ftp) {
         this.Init();
+        ftp = this.normalize_ftp(ftp);
         const id = ftp.id;
         this.ftps[id] = ftp;
         this.update_ftps(this.ftps);
@@ -56,6 +85,7 @@ class FTPDT extends BaseDT {
 
     static insert_ftp(ftp) {
         this.Init();
+        ftp = this.normalize_ftp(ftp);
         if (!ftp.id || ftp.id === 'undefined') {
             ftp.id = (require('crypto').randomUUID ? require('crypto').randomUUID() : require('crypto').randomBytes(16).toString('hex'));
         }

@@ -2,7 +2,7 @@
 // Recovered module id: 231
 "use strict";
 
-const { SSHType } = require("../shared/constants.js");
+const { SSHType, Type } = require("../shared/constants.js");
 const { FTP } = require("../connections/ftp-entity.js");
 const crypto = require("crypto");
 
@@ -21,6 +21,7 @@ class FTPInfo {
     constructor(name, group, status, ftp, description) {
         this.id = uuid();
         this.name = name;
+        this.type = Type.FTP;
         this.group = group;
         this.status = status;
         this.description = description;

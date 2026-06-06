@@ -139,6 +139,7 @@ function defaultConnection(kind) {
     return {
       id: generateId(),
       name: "default",
+      type: "FTP",
       group: "default",
       status: 1,
       description: "",
