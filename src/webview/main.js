@@ -1,6 +1,38 @@
 import { computed, createApp, defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, toRaw, watch } from "vue";
-import ElementPlus, { ElMessage } from "element-plus";
-import "element-plus/dist/index.css";
+import {
+  ElButton,
+  ElCard,
+  ElCheckbox,
+  ElCheckboxGroup,
+  ElColorPicker,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElInputNumber,
+  ElMessage,
+  ElOption,
+  ElSelect,
+  ElSwitch,
+  ElTable,
+  ElTableColumn,
+  ElTag,
+} from "element-plus";
+import "element-plus/es/components/button/style/css";
+import "element-plus/es/components/card/style/css";
+import "element-plus/es/components/checkbox/style/css";
+import "element-plus/es/components/color-picker/style/css";
+import "element-plus/es/components/dialog/style/css";
+import "element-plus/es/components/form/style/css";
+import "element-plus/es/components/input/style/css";
+import "element-plus/es/components/input-number/style/css";
+import "element-plus/es/components/message/style/css";
+import "element-plus/es/components/option/style/css";
+import "element-plus/es/components/select/style/css";
+import "element-plus/es/components/switch/style/css";
+import "element-plus/es/components/table/style/css";
+import "element-plus/es/components/table-column/style/css";
+import "element-plus/es/components/tag/style/css";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
@@ -821,4 +853,25 @@ function routeFromHash() {
   return routes[name] ? name : "ssh";
 }
 
-createApp(App).use(ElementPlus).mount("#app");
+const elementComponents = [
+  ElButton,
+  ElCard,
+  ElCheckbox,
+  ElCheckboxGroup,
+  ElColorPicker,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElInputNumber,
+  ElOption,
+  ElSelect,
+  ElSwitch,
+  ElTable,
+  ElTableColumn,
+  ElTag,
+];
+
+const app = createApp(App);
+elementComponents.forEach((component) => app.component(component.name, component));
+app.mount("#app");
