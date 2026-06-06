@@ -88,7 +88,7 @@
         "SSHTOOLTools.default.OpenFileMaxSize": {
           "markdownDescription": "%sshtool.properties.default.open_file_max_size.title%",
           "type": "number",
-          "default": 10,
+          "default": 50,
           "pattern": "^(\\d+(?:\\.\\d+)?)$"
         },
         "SSHTOOLTools.default.ProhibitFileExt": {
