@@ -33,6 +33,38 @@ class SSH {
 }
 exports.SSH = SSH;
 class SSHConn {
+    static cacheKey(sshInfo, remotePath) {
+        return `${sshInfo.id}:${remotePath || "/"}`;
+    }
+
+    static cloneList(list) {
+        return Array.isArray(list) ? list.map(item => Object.assign({}, item)) : list;
+    }
+
+    static getCachedList(sshInfo, remotePath) {
+        const cache = this.listCache[this.cacheKey(sshInfo, remotePath)];
+        if (!cache || Date.now() - cache.time > this.listCacheTTL) {
+            return null;
+        }
+        return this.cloneList(cache.list);
+    }
+
+    static setCachedList(sshInfo, remotePath, list) {
+        this.listCache[this.cacheKey(sshInfo, remotePath)] = {
+            time: Date.now(),
+            list: this.cloneList(list),
+        };
+    }
+
+    static clearListCache(sshInfo) {
+        const prefix = `${sshInfo.id}:`;
+        Object.keys(this.listCache).forEach((key) => {
+            if (key.startsWith(prefix)) {
+                delete this.listCache[key];
+            }
+        });
+    }
+
     static openJumpStream(sshInfo, option) {
         const jump = normalizeJump(sshInfo);
         if (!jump.enabled) {
@@ -150,6 +182,7 @@ class SSHConn {
         return Promise.resolve({ client: null, sftp: null });
     }
     static closeSSH(sshInfo, forwardOption = null) {
+        this.clearListCache(sshInfo);
         let key = sshInfo.id;
         if (forwardOption) {
             key = forwardOption.fid;
@@ -165,6 +198,11 @@ class SSHConn {
     }
     static list(sshInfo, rforder) {
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            const cachedList = this.getCachedList(sshInfo, rforder);
+            if (cachedList) {
+                resolve(cachedList);
+                return;
+            }
             let mark = setTimeout(() => {
                 resolve(null);
                 mark = null;
@@ -184,7 +222,8 @@ class SSHConn {
                             resolve(null);
                             return;
                         }
-                        resolve(list);
+                        this.setCachedList(sshInfo, rforder, list);
+                        resolve(this.cloneList(list));
                     }
                 });
             }
@@ -213,6 +252,7 @@ class SSHConn {
                         resolve(false);
                         return;
                     }
+                    this.clearListCache(sshInfo);
                     resolve(true);
                 }
             });
@@ -234,6 +274,7 @@ class SSHConn {
                         resolve(false);
                         return;
                     }
+                    this.clearListCache(sshInfo);
                     resolve(true);
                 }
             });
@@ -255,6 +296,7 @@ class SSHConn {
                         resolve(false);
                         return;
                     }
+                    this.clearListCache(sshInfo);
                     resolve(true);
                 }
             });
@@ -276,6 +318,7 @@ class SSHConn {
                         resolve(false);
                         return;
                     }
+                    this.clearListCache(sshInfo);
                     resolve(true);
                 }
             });
@@ -297,6 +340,7 @@ class SSHConn {
                         resolve(false);
                         return;
                     }
+                    this.clearListCache(sshInfo);
                     resolve(true);
                 }
             });
@@ -305,3 +349,5 @@ class SSHConn {
 }
 exports.SSHConn = SSHConn;
 SSHConn.activeConn = {};
+SSHConn.listCache = {};
+SSHConn.listCacheTTL = 15000;

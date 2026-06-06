@@ -95,6 +95,38 @@ class FTPClientAdapter {
 }
 
 class FTPConn {
+    static cacheKey(ftpInfo, remotePath) {
+        return `${ftpInfo.id}:${remotePath || "/"}`;
+    }
+
+    static cloneList(list) {
+        return Array.isArray(list) ? list.map(item => Object.assign({}, item)) : list;
+    }
+
+    static getCachedList(ftpInfo, remotePath) {
+        const cache = this.listCache[this.cacheKey(ftpInfo, remotePath)];
+        if (!cache || Date.now() - cache.time > this.listCacheTTL) {
+            return null;
+        }
+        return this.cloneList(cache.list);
+    }
+
+    static setCachedList(ftpInfo, remotePath, list) {
+        this.listCache[this.cacheKey(ftpInfo, remotePath)] = {
+            time: Date.now(),
+            list: this.cloneList(list),
+        };
+    }
+
+    static clearListCache(ftpInfo) {
+        const prefix = `${ftpInfo.id}:`;
+        Object.keys(this.listCache).forEach((key) => {
+            if (key.startsWith(prefix)) {
+                delete this.listCache[key];
+            }
+        });
+    }
+
     static accessOptions(ftpInfo) {
         const ftp = ftpInfo.ftp || {};
         return {
@@ -140,6 +172,7 @@ class FTPConn {
     }
 
     static closeFTP(ftpInfo) {
+        this.clearListCache(ftpInfo);
         const key = ftpInfo.id;
         if (this.activeFTPConn[key]) {
             this.activeFTPConn[key].client.end();
@@ -178,6 +211,7 @@ class FTPConn {
         return this.withTimeout(ftpInfo, async () => {
             const { client } = await this.get(ftpInfo);
             await client.client.uploadFrom(lfile, rfile);
+            this.clearListCache(ftpInfo);
             return true;
         }, false);
     }
@@ -186,15 +220,22 @@ class FTPConn {
         return this.withTimeout(ftpInfo, async () => {
             const { client } = await this.get(ftpInfo);
             await client.client.rename(oldname, newname);
+            this.clearListCache(ftpInfo);
             return true;
         }, false);
     }
 
     static list(ftpInfo, rforder) {
         return this.withTimeout(ftpInfo, async () => {
+            const cachedList = this.getCachedList(ftpInfo, rforder);
+            if (cachedList) {
+                return cachedList;
+            }
             const { client } = await this.get(ftpInfo);
             const list = await client.client.list(rforder);
-            return list.map(normalizeListEntry);
+            const normalized = list.map(normalizeListEntry);
+            this.setCachedList(ftpInfo, rforder, normalized);
+            return this.cloneList(normalized);
         }, null);
     }
 
@@ -202,6 +243,7 @@ class FTPConn {
         return this.withTimeout(ftpInfo, async () => {
             const { client } = await this.get(ftpInfo);
             await client.client.removeEmptyDir(rforder);
+            this.clearListCache(ftpInfo);
             return true;
         }, false);
     }
@@ -210,6 +252,7 @@ class FTPConn {
         return this.withTimeout(ftpInfo, async () => {
             const { client } = await this.get(ftpInfo);
             await client.client.send(`MKD ${rforder}`);
+            this.clearListCache(ftpInfo);
             return true;
         }, false);
     }
@@ -218,9 +261,12 @@ class FTPConn {
         return this.withTimeout(ftpInfo, async () => {
             const { client } = await this.get(ftpInfo);
             await client.client.remove(rfile);
+            this.clearListCache(ftpInfo);
             return true;
         }, false);
     }
 }
 exports.FTPConn = FTPConn;
 FTPConn.activeFTPConn = {};
+FTPConn.listCache = {};
+FTPConn.listCacheTTL = 15000;
