@@ -3,7 +3,6 @@
 "use strict";
 
 const { SSHType, Type } = require("../shared/constants.js");
-const { FTP } = require("../connections/ftp-entity.js");
 const crypto = require("crypto");
 
 function uuid() {
@@ -28,7 +27,14 @@ class FTPInfo {
         this.ftp = ftp;
     }
     static New() {
-        return new FTPInfo("default", "default", SSHType.ONLINE, new FTP('127.0.0.1', 21, 'root', null, false), "");
+        return new FTPInfo("default", "default", SSHType.ONLINE, {
+            host: "127.0.0.1",
+            port: 21,
+            user: "root",
+            password: null,
+            secure: false,
+            ostype: "linux",
+        }, "");
     }
 }
 exports.FTPInfo = FTPInfo;
