@@ -1,12 +1,10 @@
 import { computed, createApp, defineComponent, nextTick, onBeforeUnmount, onMounted, reactive, ref, toRaw, watch } from "vue";
-import { createRouter, createWebHashHistory, useRoute, useRouter } from "vue-router";
 import ElementPlus, { ElMessage } from "element-plus";
 import "element-plus/dist/index.css";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { SearchAddon } from "@xterm/addon-search";
 import { WebLinksAddon } from "@xterm/addon-web-links";
-import { WebglAddon } from "@xterm/addon-webgl";
 import "@xterm/xterm/css/xterm.css";
 import "./styles.css";
 import addDarkIcon from "../../resources/images/dark/add.svg";
@@ -159,10 +157,12 @@ function vscodeTheme() {
 }
 
 const EventPageMixin = {
-  setup() {
-    const route = useRoute();
-    onMounted(() => bus.emit(`route-${route.name}`));
-    watch(() => route.name, (name) => {
+  props: {
+    routeName: { type: String, required: true },
+  },
+  setup(props) {
+    onMounted(() => bus.emit(`route-${props.routeName}`));
+    watch(() => props.routeName, (name) => {
       if (name) bus.emit(`route-${name}`);
     });
     return { bus };
@@ -712,7 +712,6 @@ const TerminalPage = defineComponent({
       term.loadAddon(fitAddon);
       term.loadAddon(searchAddon);
       term.loadAddon(new WebLinksAddon((_, uri) => bus.emit("openLink", uri)));
-      try { term.loadAddon(new WebglAddon()); } catch (_) {}
       term.open(terminalEl.value);
       fitAddon.fit();
       term.focus();
@@ -773,30 +772,53 @@ const TerminalPage = defineComponent({
 
 const App = defineComponent({
   setup() {
-    const router = useRouter();
+    const currentRoute = ref(routeFromHash());
+    const routeConfig = computed(() => routes[currentRoute.value] || routes.ssh);
+    const syncRoute = () => {
+      currentRoute.value = routeFromHash();
+    };
+    const navigate = (name) => {
+      const next = routes[name] ? name : "ssh";
+      const hash = `#/${next}`;
+      currentRoute.value = next;
+      if (window.location.hash !== hash) {
+        window.location.hash = hash;
+      }
+      bus.emit(`route-${next}`);
+    };
     const dispose = bus.on("route", (name) => {
-      router.replace(`/${name}`);
-      bus.emit(`route-${name}`);
+      navigate(name);
     });
-    onMounted(() => bus.emit("init"));
-    onBeforeUnmount(() => dispose());
-    return {};
+    onMounted(() => {
+      window.addEventListener("hashchange", syncRoute);
+      if (!window.location.hash) {
+        window.location.hash = "#/ssh";
+      }
+      syncRoute();
+      bus.emit("init");
+    });
+    onBeforeUnmount(() => {
+      dispose();
+      window.removeEventListener("hashchange", syncRoute);
+    });
+    return { currentRoute, routeConfig };
   },
-  template: `<router-view />`,
+  template: `<component :is="routeConfig.component" v-bind="{ ...routeConfig.props, routeName: currentRoute }" />`,
 });
 
-const router = createRouter({
-  history: createWebHashHistory(),
-  routes: [
-    { path: "/", redirect: "/ssh" },
-    { path: "/ftp", component: ConnectionPage, name: "ftp", props: { kind: "ftp", connectEvent: "CONNECT_FTP_INFO_CONNECT", saveEvent: "CONNECT_FTP_INFO_SAVE" } },
-    { path: "/ssh", component: ConnectionPage, name: "ssh", props: { kind: "ssh", connectEvent: "CONNECT_SSH_INFO_CONNECT", saveEvent: "CONNECT_SSH_INFO_SAVE", testEvent: "CONNECT_SSH_INFO_TEST" } },
-    { path: "/config", component: ConfigPage, name: "config" },
-    { path: "/forward", component: ManagerPage, name: "forward", props: { kind: "forward" } },
-    { path: "/remote", component: ManagerPage, name: "remote", props: { kind: "remote" } },
-    { path: "/workspace", component: WorkspacePage, name: "workspace" },
-    { path: "/sshXterm", component: TerminalPage, name: "sshXterm" },
-  ],
-});
+const routes = {
+  ftp: { component: ConnectionPage, props: { kind: "ftp", connectEvent: "CONNECT_FTP_INFO_CONNECT", saveEvent: "CONNECT_FTP_INFO_SAVE" } },
+  ssh: { component: ConnectionPage, props: { kind: "ssh", connectEvent: "CONNECT_SSH_INFO_CONNECT", saveEvent: "CONNECT_SSH_INFO_SAVE", testEvent: "CONNECT_SSH_INFO_TEST" } },
+  config: { component: ConfigPage, props: {} },
+  forward: { component: ManagerPage, props: { kind: "forward" } },
+  remote: { component: ManagerPage, props: { kind: "remote" } },
+  workspace: { component: WorkspacePage, props: {} },
+  sshXterm: { component: TerminalPage, props: {} },
+};
 
-createApp(App).use(router).use(ElementPlus).mount("#app");
+function routeFromHash() {
+  const name = window.location.hash.replace(/^#\/?/, "") || "ssh";
+  return routes[name] ? name : "ssh";
+}
+
+createApp(App).use(ElementPlus).mount("#app");
