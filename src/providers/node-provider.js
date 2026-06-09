@@ -54,9 +54,12 @@ class NodeProvider {
     }
     clearall() {
         Util.confirm((0, Localize)("sshtool.msg.clearall.alert"), () => {
-            ConfigAPI.clear();
-            API.refresh();
-            Console.info((0, Localize)("sshtool.msg.clearall.ok"));
+            Promise.resolve(ConfigAPI.clear()).then(() => {
+                API.refresh();
+                Console.info((0, Localize)("sshtool.msg.clearall.ok"));
+            }).catch((err) => {
+                Console.err(err);
+            });
         });
     }
     save_ssh(node) {

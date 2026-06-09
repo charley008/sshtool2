@@ -133,6 +133,29 @@ class Storage {
     static update_ssh_host_keys(hostKeys) {
         this.context.globalState.update(CacheKey.SSH_HOST_KEYS, hostKeys || {});
     }
+    static async clear_extension_state() {
+        const keysToDelete = [
+            CacheKey.SSH_LIST,
+            CacheKey.CONECTIONS_CONFIG,
+            CacheKey.COLLAPSE_SATE,
+            CacheKey.TEMP_FILE_REMOTES,
+            CacheKey.TEMP_STATUS_BAR,
+            CacheKey.TEMP_KEYS,
+            CacheKey.SSH_HOST_KEYS,
+            CacheKey.SSHTOOL_CACHEKEY_DATA_SSH,
+            CacheKey.SSHTOOL_CACHEKEY_DATA_WORKSPACE,
+            CacheKey.SSHTOOL_CACHEKEY_DATA_FORWARD,
+            CacheKey.SSHTOOL_CACHEKEY_DATA_REMOTE,
+            CacheKey.SSHTOOL_CACHEKEY_DATA_FTP,
+        ];
+        for (const key of keysToDelete) {
+            await this.context.globalState.update(key, undefined);
+        }
+        this.tempFileRemotes = {};
+        this.tempForwards = {};
+        this.tempRDesktops = {};
+        this.tempHistory = {};
+    }
 }
 exports.Storage = Storage;
 Storage.tempFileRemotes = {};

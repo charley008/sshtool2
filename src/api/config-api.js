@@ -14,6 +14,7 @@ const { FTPCredentialService } = require("../services/ftp-credential-service.js"
 const { ConfigVO } = require("../models/config-model.js");
 const { createEncryptedExport, decryptExport, isEncryptedExport } = require("../utils/config-security.js");
 const { omitSensitive } = require("../utils/sensitive-fields.js");
+const { Storage } = require("../storage/storage.js");
 const _ftp = require("./ftp-api.js");
 const { FTPVO } = require("../models/ftp-model.js");
 const _ssh = require("./ssh-api.js");
@@ -197,9 +198,14 @@ class ConfigAPI {
         return filePath;
     }
 
-    static clear() {
+    static async clear() {
+        const currentSshIds = Object.keys(SSHVO.getAll() || {});
+        const currentFtpIds = Object.keys(FTPVO.getAll() || {});
         SSHVO.delAll();
         FTPVO.delAll();
+        await SSHCredentialService.deleteMany(currentSshIds);
+        await FTPCredentialService.deleteMany(currentFtpIds);
+        await Storage.clear_extension_state();
     }
 
     static manager() {
