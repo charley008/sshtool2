@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.1.6 - 2026-06-09
+
+- Fixed a bug where background status refresh could overwrite edited connection data such as the selected group.
+
 ## 2.1.4 - 2026-05-20
 
 - Changed the extension identity to `charley008.sshtools2` so it no longer conflicts with the Marketplace version.

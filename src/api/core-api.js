@@ -426,8 +426,11 @@ class API {
                 const sshvo = SSHVO.get(ssh.id);
                 // 检测主机是否在线 
                 const isOpen = yield API.probeTcp(ssh.ssh.host, ssh.ssh.port, Settings.PingHostTime * 1000);
-                ssh.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
-                SSHVO.post(ssh);
+                const latestSsh = SSHVO.get(ssh.id).ssh;
+                if (latestSsh) {
+                    latestSsh.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
+                    SSHVO.post(latestSsh);
+                }
                 // 检测forward运行状态
                 const forwards = sshvo.forwards;
                 if (Object.keys(forwards).length > 0) {
@@ -478,8 +481,11 @@ class API {
                 const ftpvo = FTPVO.get(ftp.id);
                 // 检测主机是否在线 
                 const isOpen = yield API.probeTcp(ftp.ftp.host, ftp.ftp.port, Settings.PingHostTime * 1000);
-                ftp.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
-                FTPVO.post(ftp);
+                const latestFtp = FTPVO.get(ftp.id).ftp;
+                if (latestFtp) {
+                    latestFtp.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
+                    FTPVO.post(latestFtp);
+                }
             }
         });
     }

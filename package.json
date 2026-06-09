@@ -2,7 +2,7 @@
   "name": "sshtools2",
   "displayName": "SSH Tools 2",
   "description": "SSH Tools 2 for VS Code; SSH, SFTP, FTP, remote desktop, port forwarding, and jump host support",
-  "version": "2.1.5",
+  "version": "2.1.6",
   "publisher": "charley008",
   "engines": {
     "vscode": "^1.85.0"
