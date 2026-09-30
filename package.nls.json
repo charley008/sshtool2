@@ -271,5 +271,13 @@
     "sshtool.view.ftp.password.title": "Password",
     "sshtool.view.ftp.password.placeholder.title": "Please enter the login password",
     "sshtool.view.ftp.save.title": "Save",
-    "sshtool.view.ftp.connect.title": "Connect"
+    "sshtool.view.ftp.connect.title": "Connect",
+    "sshtool.msg.operation.failed": "Remote operation failed ({0})\nPath: {1}\nServer error: {2}",
+    "sshtool.msg.operation.empty.directory": "Folder deletion only supports empty directories (including hidden files). Check directory contents and delete permissions.",
+    "sshtool.msg.operation.no.details": "The server supplied no detailed reason; Failure alone does not identify the cause. Check delete permissions, busy directories and server restrictions.",
+    "sshtool.msg.operation.entry.failed": "Failed entry: {0} ({1})",
+    "sshtool.msg.operation.partial.delete": "Some contents may already have been deleted. The list has been refreshed; inspect remaining contents before retrying.",
+    "sshtool.msg.operation.details": "Show Details",
+    "sshtool.msg.directory.delete.title": "Delete this directory and all its contents?",
+    "sshtool.msg.directory.delete.detail": "Recursively delete: {0}\nAll subdirectories, files and hidden files will be permanently deleted. Symbolic links themselves are removed without following their targets."
 }

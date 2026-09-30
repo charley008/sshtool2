@@ -188,7 +188,10 @@ class SSHAPI {
         else if (that.contextValue == constant_1.NodeType.SSH_FILE) {
             filename = that.file.filename;
         }
-        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+        const confirmation = that.contextValue == constant_1.NodeType.SSH_FOLDER
+            ? vscode.window.showWarningMessage((0, Localize)("sshtool.msg.directory.delete.title"), { modal: true, detail: (0, Localize)("sshtool.msg.directory.delete.detail", that.fullPath) }, (0, Localize)("sshtool.yes"))
+            : vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.file.delete.title", filename), canPickMany: false });
+        return confirmation.then((str) => __awaiter(this, void 0, void 0, function* () {
             if (str == (0, Localize)("sshtool.yes")) {
                 const pathCheck = validateRemoteOperationPath(that.fullPath);
                 if (!pathCheck.ok) {
@@ -197,8 +200,8 @@ class SSHAPI {
                 }
                 if (that.contextValue == constant_1.NodeType.SSH_FOLDER) {
                     const rt = yield SSHConn.rmdir(that.info.ssh, pathCheck.value);
+                    API.refresh();
                     if (rt) {
-                        API.refresh();
                         Console.info((0, Localize)("sshtool.msg.api.file.delete.yes", that.fullPath));
                     }
                 }

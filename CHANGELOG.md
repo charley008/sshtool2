@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.8 - 2026-09-30
+
+- Added recursive deletion of non-empty SFTP/FTP directories with explicit confirmation and symlink protection.
+- Improved remote error details with failing paths, server error codes and a details dialog.
+
 ## 2.1.7 - 2026-09-30
 
 - Fixed stale configuration updates, SSH/FTP connection lifecycle and transfer cancellation.

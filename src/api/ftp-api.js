@@ -128,8 +128,11 @@ class FTPAPI {
     }
     //删除文件
     static file_delete(that) {
-        let filename = that.file.name;
-        vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.file.delete.title", filename), canPickMany: false }).then((str) => __awaiter(this, void 0, void 0, function* () {
+        const filename = that.name || (that.file && that.file.name) || that.fullPath;
+        const confirmation = that.contextValue == constant_1.NodeType.FTP_FOLDER
+            ? vscode.window.showWarningMessage((0, Localize)("sshtool.msg.directory.delete.title"), { modal: true, detail: (0, Localize)("sshtool.msg.directory.delete.detail", that.fullPath) }, (0, Localize)("sshtool.yes"))
+            : vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder: (0, Localize)("sshtool.msg.api.file.delete.title", filename), canPickMany: false });
+        return confirmation.then((str) => __awaiter(this, void 0, void 0, function* () {
             if (str == (0, Localize)("sshtool.yes")) {
                 const pathCheck = validateRemoteOperationPath(that.fullPath);
                 if (!pathCheck.ok) {
@@ -138,8 +141,8 @@ class FTPAPI {
                 }
                 if (that.contextValue == constant_1.NodeType.FTP_FOLDER) {
                     const rt = yield FTPConn.rmdir(that.info.ftp, pathCheck.value);
+                    _core.API.refresh();
                     if (rt) {
-                        _core.API.refresh();
                         Console.info((0, Localize)("sshtool.msg.api.file.delete.yes", that.fullPath));
                     }
                 }

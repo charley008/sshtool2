@@ -185,7 +185,7 @@ class SSHConn {
                 }, 10000); }),
             ]);
         } catch (error) {
-            Console.warn(error.message);
+            Console.warn(require("../utils/remote-operation-error.js").formatRemoteOperationError("SFTP", method, args, error), true);
             return fallback;
         } finally { clearTimeout(timer); }
     }
@@ -204,7 +204,29 @@ class SSHConn {
     static rename(info, from, to) { return this.mutate(info, "rename", [from, to]); }
     static put(info, local, remote) { return this.mutate(info, "fastPut", [local, remote]); }
     static mkdir(info, remote) { return this.mutate(info, "mkdir", [remote]); }
-    static rmdir(info, remote) { return this.mutate(info, "rmdir", [remote]); }
+    static async rmdir(info, remote) {
+        const { deletionPath, removeRemoteDirectory } = require("../utils/remote-directory-delete.js");
+        try {
+            deletionPath(remote);
+            const { sftp } = await this.get(info);
+            const call = (method, target) => new Promise((resolve, reject) => {
+                sftp[method](target, (error, result) => error ? reject(error) : resolve(result));
+            });
+            return await removeRemoteDirectory({
+                kind: async target => {
+                    const attrs = await call("lstat", target);
+                    return attrs.isSymbolicLink() ? "link" : attrs.isDirectory() ? "directory" : "file";
+                },
+                list: async target => (await call("readdir", target)).map(entry => entry.filename),
+                unlink: target => call("unlink", target),
+                rmdir: target => call("rmdir", target),
+                close: () => this.closeSSH(info),
+            }, remote);
+        } catch (error) {
+            Console.warn(require("../utils/remote-operation-error.js").formatRemoteOperationError("SFTP", "removeDirectory", [remote], error), true);
+            return false;
+        } finally { this.clearListCache(info); }
+    }
     static delete(info, remote) { return this.mutate(info, "unlink", [remote]); }
 }
 exports.SSHConn = SSHConn;

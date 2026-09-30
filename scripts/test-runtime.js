@@ -20,6 +20,9 @@ function load(relative, mocks = {}) {
         require(name) {
             if (Object.hasOwn(mocks, name)) return mocks[name];
             if (name.endsWith("/console.js")) return { Console: quiet };
+            if (name.endsWith("/remote-operation-error.js")) return load("src/utils/remote-operation-error.js", {
+                "../ui/localize.js": { default: translate() },
+            });
             return require(name.startsWith(".") ? path.resolve(path.dirname(filename), name) : name);
         } };
     vm.runInNewContext(fs.readFileSync(filename, "utf8"), scope, { filename });
@@ -30,6 +33,27 @@ function context() {
     return { values, get writes() { return writes; }, globalStorageUri: { fsPath: "unused" },
         globalState: { get: key => values.get(key), update: async (key, value) => { writes++; if (value === undefined) values.delete(key); else values.set(key, structuredClone(value)); } } };
 }
+function translate(locale = "") {
+    const bundle = require(`../package.nls${locale}.json`);
+    return (key, ...args) => bundle[key].replace(/\{(\d+)\}/g, (_, index) => args[index]);
+}
+
+test("remote operation errors include paths, server codes and non-recursive folder deletion guidance", () => {
+    for (const locale of ["", ".zh-cn"]) {
+        const { formatRemoteOperationError } = load("src/utils/remote-operation-error.js", {
+            "../ui/localize.js": { default: translate(locale) },
+        });
+        const generic = formatRemoteOperationError("SFTP", "rmdir", ["/data/example"], Object.assign(new Error("Failure"), { code: 4 }));
+        assert.match(generic, /SFTP rmdir/);
+        assert.match(generic, /\/data\/example/);
+        assert.match(generic, /Failure \[code=4\]/);
+        assert.match(generic, locale ? /空目录/ : /empty directories/);
+        assert.match(generic, locale ? /未提供详细原因/ : /no detailed reason/);
+        const denied = formatRemoteOperationError("FTP", "removeEmptyDir", ["/private"], Object.assign(new Error("Permission denied"), { code: 550 }));
+        assert.match(denied, /Permission denied \[code=550\]/);
+        assert.doesNotMatch(denied, locale ? /未提供详细原因/ : /no detailed reason/);
+    }
+});
 function info(id = "ssh", kind = "ssh") {
     return { id, name: id, status: 0, [kind]: kind === "ssh" ? { host: "localhost", port: 22, username: "u" } : { host: "localhost", port: 21, user: "u" } };
 }
@@ -86,6 +110,7 @@ test("editors opened before cleanup cannot write configuration back afterwards",
 
 function sshFixture() {
     const clients = [];
+    const warnings = [];
     class Client extends EventEmitter {
         constructor() { super(); clients.push(this); this.destroyed = false; this.sftpCalls = 0; }
         connect() { setImmediate(() => { if (!this.destroyed) this.emit("ready"); }); }
@@ -95,12 +120,153 @@ function sshFixture() {
     }
     const credentials = { sanitize: x => structuredClone(x), hydrate: async x => x };
     const { SSHConn } = load("src/connections/ssh-connection.js", {
+        "../ui/console.js": { Console: { ...quiet, warn: message => warnings.push(message) } },
         ssh2: { Client }, "../services/ssh-credential-service.js": { SSHCredentialService: credentials },
         "../services/ssh-hostkey-service.js": { SSHHostKeyService: { createVerifier: () => ({}) } },
         "../models/ssh-model.js": { SSHVO: { get: () => ({ ssh: null }) } },
     });
-    return { SSHConn, clients, credentials };
+    return { SSHConn, clients, credentials, warnings };
 }
+test("SFTP folder deletion reports operation context instead of a bare Failure", async () => {
+    const { SSHConn, warnings } = sshFixture();
+    SSHConn.get = async () => ({ sftp: { lstat: (remote, callback) => callback(Object.assign(new Error("Failure"), { code: 4 })) } });
+    assert.equal(await SSHConn.rmdir(info(), "/data/folder"), false);
+    assert.equal(warnings.length, 1);
+    assert.match(warnings[0], /SFTP removeDirectory/);
+    assert.match(warnings[0], /\/data\/folder/);
+    assert.match(warnings[0], /code=4/);
+    assert.match(warnings[0], /Some contents may already/);
+});
+
+function remoteTree() {
+    const entries = new Map(Object.entries({
+        "/data": "directory", "/data/.hidden": "file", "/data/nested": "directory",
+        "/data/nested/file.txt": "file", "/data/space ; name": "file", "/data/link": "link",
+        "/outside": "directory", "/outside/keep": "file",
+    }));
+    const removed = [];
+    const kind = async target => {
+        if (!entries.has(target)) throw Object.assign(new Error("No such file"), { code: 2 });
+        return entries.get(target);
+    };
+    const names = target => [...entries.keys()].filter(key => path.posix.dirname(key) === target).map(key => path.posix.basename(key));
+    const unlink = async target => { assert.notEqual(entries.get(target), "directory"); entries.delete(target); removed.push(target); };
+    const rmdir = async target => { assert.equal(names(target).length, 0, "children must be removed first"); entries.delete(target); removed.push(target); };
+    return { entries, removed, kind, names, unlink, rmdir, list: async target => [".", "..", ...names(target)], close() {} };
+}
+
+test("recursive deletion includes hidden files, deletes children first and never follows symlinks", async () => {
+    const tree = remoteTree();
+    const { removeRemoteDirectory } = require("../src/utils/remote-directory-delete.js");
+    assert.equal(await removeRemoteDirectory(tree, "/data"), true);
+    assert.equal(tree.removed.at(-1), "/data");
+    assert.ok(tree.removed.includes("/data/.hidden"));
+    assert.deepEqual([...tree.entries.keys()], ["/outside", "/outside/keep"]);
+});
+
+test("recursive deletion rejects roots/traversal and unsafe directory listing names", async () => {
+    const { removeRemoteDirectory } = require("../src/utils/remote-directory-delete.js");
+    const tree = remoteTree();
+    for (const root of ["/", "//", ".", "", "C:/", "/C:/", "/data/..", "/data\nDELE x"]) {
+        await assert.rejects(removeRemoteDirectory(tree, root), /Refusing/);
+    }
+    tree.list = async () => ["../outside", "valid"];
+    await assert.rejects(removeRemoteDirectory(tree, "/data"), /Unsafe name/);
+    assert.equal(tree.removed.length, 0);
+});
+
+test("recursive failures preserve child path/code and stalled requests close the connection", async () => {
+    const { removeRemoteDirectory } = require("../src/utils/remote-directory-delete.js");
+    const tree = remoteTree();
+    tree.unlink = async () => { throw Object.assign(new Error("Permission denied"), { code: 3 }); };
+    await assert.rejects(removeRemoteDirectory(tree, "/data"), error => error.code === 3 && error.remotePath === "/data/.hidden" && error.remoteMethod === "unlink");
+    let closed = false;
+    tree.kind = () => new Promise(() => {}); tree.close = () => { closed = true; };
+    await assert.rejects(removeRemoteDirectory(tree, "/data", 10), error => error.code === "ETIMEDOUT" && error.remotePath === "/data");
+    assert.equal(closed, true);
+});
+
+test("SFTP recursively deletes through lstat/readdir/unlink/rmdir without a shell command", async () => {
+    const tree = remoteTree(); const { SSHConn, warnings } = sshFixture();
+    const wrap = fn => (target, callback) => Promise.resolve().then(() => fn(target)).then(value => callback(null, value), callback);
+    SSHConn.get = async () => ({ sftp: {
+        lstat: wrap(async target => { const kind = await tree.kind(target); return { isSymbolicLink: () => kind === "link", isDirectory: () => kind === "directory" }; }),
+        readdir: wrap(async target => (await tree.list(target)).map(filename => ({ filename }))),
+        unlink: wrap(tree.unlink), rmdir: wrap(tree.rmdir),
+    } });
+    assert.equal(await SSHConn.rmdir(info(), "/data"), true);
+    assert.equal(warnings.length, 0);
+    assert.deepEqual([...tree.entries.keys()], ["/outside", "/outside/keep"]);
+});
+
+test("FTP recursive deletion holds one queue and leaves symlink targets untouched", async () => {
+    const tree = remoteTree(); const warnings = [];
+    const { FileType } = require("basic-ftp");
+    const { FTPConn } = load("src/connections/ftp-connection.js", {
+        "../ui/console.js": { Console: { ...quiet, warn: msg => warnings.push(msg) } },
+        "../models/ftp-model.js": { FTPVO: { title: () => "ftp" } },
+        "../services/ftp-credential-service.js": { FTPCredentialService: {} },
+    });
+    const queue = new AsyncQueue(); let active = 0, maximum = 0;
+    const wrap = fn => async (...args) => { active++; maximum = Math.max(maximum, active); try { await tick(); return await fn(...args); } finally { active--; } };
+    const raw = { pwd: wrap(async () => "/"),
+        list: wrap(async target => tree.names(target).map(name => ({ name, type: { directory: FileType.Directory, file: FileType.File, link: FileType.SymbolicLink }[tree.entries.get(path.posix.join(target, name))] }))),
+        remove: wrap(tree.unlink), removeEmptyDir: wrap(tree.rmdir),
+    };
+    FTPConn.get = async () => ({ client: { run: action => queue.run(() => action(raw)) } });
+    const deleting = FTPConn.rmdir(info("ftp", "ftp"), "data");
+    await tick();
+    const listing = FTPConn.list(info("ftp", "ftp"), "/outside");
+    assert.equal(await deleting, true); await listing;
+    assert.equal(maximum, 1); assert.equal(warnings.length, 0);
+    assert.deepEqual([...tree.entries.keys()], ["/outside", "/outside/keep"]);
+    raw.remove = wrap(async () => { throw Object.assign(new Error("Permission denied"), { code: 550 }); });
+    assert.equal(await FTPConn.rmdir(info("ftp", "ftp"), "/outside"), false);
+    assert.match(warnings[0], /\/outside\/keep/);
+    assert.match(warnings[0], /Permission denied \[code=550\]/);
+});
+
+test("operation notifications provide a details dialog with the full message", async () => {
+    const calls = [];
+    const { Console } = load("src/ui/console.js", {
+        vscode: { window: { createOutputChannel: () => ({ appendLine() {}, hide() {} }), showWarningMessage: async (...args) => { calls.push(args); return calls.length === 1 ? "Show Details" : undefined; } } },
+        "./localize.js": { default: translate() },
+        "../storage/storage.js": { Storage: { get_status_keys: () => ({}) } },
+        "../utils/file-manager.js": {},
+    });
+    Console.warn("Failed entry: /data/private\nPermission denied [code=3]", true);
+    await tick();
+    assert.equal(calls.length, 2);
+    assert.equal(calls[1][1].modal, true);
+    assert.match(calls[1][1].detail, /Permission denied \[code=3\]/);
+});
+
+test("SFTP and FTP folder deletion requires explicit recursive confirmation and refreshes partial failures", async () => {
+    for (const kind of ["ssh", "ftp"]) {
+        const relative = `src/api/${kind}-api.js`;
+        const source = fs.readFileSync(path.resolve(__dirname, "..", relative), "utf8");
+        const mocks = {};
+        for (const match of source.matchAll(/require\("([^"]+)"\)/g)) mocks[match[1]] = {};
+        let choice, deletes = 0, refreshes = 0; const dialogs = [];
+        const constants = require("../src/shared/constants.js");
+        mocks.vscode = { window: { showWarningMessage: async (...args) => { dialogs.push(args); return choice; }, showQuickPick: async () => { throw new Error("Folder confirmation must use a modal warning"); } } };
+        mocks["../ui/localize.js"] = { default: translate() };
+        mocks["../ui/console.js"] = { Console: quiet };
+        mocks["../shared/constants.js"] = constants;
+        mocks["../utils/path-guard.js"] = require("../src/utils/path-guard.js");
+        mocks["./core-api.js"] = { API: { refresh: () => refreshes++ } };
+        mocks[`../connections/${kind}-connection.js`] = { [kind === "ssh" ? "SSHConn" : "FTPConn"]: { rmdir: async () => { deletes++; return false; } } };
+        const api = load(relative, mocks)[kind === "ssh" ? "SSHAPI" : "FTPAPI"];
+        const node = { contextValue: constants.NodeType[kind === "ssh" ? "SSH_FOLDER" : "FTP_FOLDER"], name: "data", fullPath: "/data", info: { [kind]: info() } };
+        await api.file_delete(node);
+        assert.equal(deletes, 0);
+        assert.equal(dialogs[0][1].modal, true);
+        assert.match(dialogs[0][1].detail, /All subdirectories, files and hidden files/);
+        choice = translate()("sshtool.yes");
+        await api.file_delete(node);
+        assert.equal(deletes, 1); assert.equal(refreshes, 1);
+    }
+});
 test("SSH shares pending connections and upgrades a shared client to SFTP once", async () => {
     const { SSHConn, clients } = sshFixture();
     const pair = await Promise.all([SSHConn.get(info(), false), SSHConn.get(info(), false)]);

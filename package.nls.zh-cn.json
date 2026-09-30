@@ -271,5 +271,13 @@
     "sshtool.view.ftp.password.title": "密码",
     "sshtool.view.ftp.password.placeholder.title": "请输入登陆密码",
     "sshtool.view.ftp.save.title": "保存",
-    "sshtool.view.ftp.connect.title": "连接"
+    "sshtool.view.ftp.connect.title": "连接",
+    "sshtool.msg.operation.failed": "远程操作失败（{0}）\n路径：{1}\n服务器错误：{2}",
+    "sshtool.msg.operation.empty.directory": "删除文件夹仅支持空目录（包括隐藏文件）。请检查目录内容及删除权限。",
+    "sshtool.msg.operation.no.details": "服务器未提供详细原因，不能仅凭 Failure 判断具体原因。请检查删除权限、目录是否被占用或服务器限制。",
+    "sshtool.msg.operation.entry.failed": "出错位置：{0}（{1}）",
+    "sshtool.msg.operation.partial.delete": "操作可能已删除部分内容，列表已刷新；请检查剩余内容后再重试。",
+    "sshtool.msg.operation.details": "查看详情",
+    "sshtool.msg.directory.delete.title": "确认删除目录及全部内容？",
+    "sshtool.msg.directory.delete.detail": "将递归删除：{0}\n包含所有子目录、文件和隐藏文件，无法恢复。符号链接只删除链接本身。"
 }

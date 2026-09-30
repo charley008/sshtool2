@@ -52,9 +52,16 @@ class Console {
         this.log(`[INFO] ${msg}`);
         // vscode.window.showInformationMessage(msg);
     }
-    static warn(msg) {
+    static warn(msg, details = false) {
         this.log(`[WARN] ${msg}`);
-        vscode.window.showWarningMessage(msg);
+        if (!details) {
+            vscode.window.showWarningMessage(msg);
+            return;
+        }
+        const button = (0, Localize)("sshtool.msg.operation.details");
+        vscode.window.showWarningMessage(msg, button).then(choice => {
+            if (choice === button) return vscode.window.showWarningMessage((0, Localize)("sshtool.msg.operation.details"), { modal: true, detail: msg });
+        }).catch(error => this.debug(String(error)));
     }
     static err(err) {
         this.log(`[ERROR] ${err.message}`);
