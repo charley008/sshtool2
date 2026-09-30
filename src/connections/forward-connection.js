@@ -30,26 +30,15 @@ class ForwardConnection {
             agentSocket: '',
         };
     }
-    shutdown() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const forward = this.vo.forward;
-            this.debug("Shutdown connections");
-            const client = yield this.establish();
-            client.removeAllListeners();
-            client.end();
-            return new Promise((resolve) => {
-                const fwds = Storage.get_forwards_server();
-                if (Object.keys(fwds).length > 0) {
-                    const fwd = fwds[forward.id];
-                    if (fwd) {
-                        fwd.close(resolve);
-                        delete fwds[forward.id];
-                        Storage.update_forwards_server(fwds);
-                    }
-                }
-                return resolve;
-            });
-        });
+    async shutdown() {
+        const forward = this.vo.forward;
+        const fwds = Storage.get_forwards_server();
+        const server = fwds[forward.id];
+        if (server) {
+            await require("../utils/runtime-resource.js").stopResource(server);
+            if (fwds[forward.id] === server) delete fwds[forward.id];
+        }
+        await SSHConn.closeSSH(this.vo.ssh, this.forwardOptions);
     }
     tty() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -171,16 +160,22 @@ class ForwardConnection {
             const sshInfo = this.vo.ssh;
             const fwds = Storage.get_forwards_server();
             if (fwds[forward.id]) {
-                this.shutdown();
+                yield this.shutdown();
             }
             const client = yield this.establish();
             return new Promise((resolve, reject) => {
                 const server = net.createServer((socket) => {
+                    server.sockets.add(socket);
+                    socket.on("close", () => server.sockets.delete(socket));
+                    socket.on("error", () => socket.destroy());
                     this.debug('Forwarding connection from "localhost:%d" to "%s:%d"', ForwardVO.title(forward));
                     client.forwardOut(forward.forward.localHost, forward.forward.localPort, forward.forward.remoteHost, forward.forward.remotePort, (error, stream) => {
                         if (error) {
-                            return reject(error);
+                            socket.destroy();
+                            return;
                         }
+                        stream.on("error", () => socket.destroy());
+                        socket.on("close", () => stream.destroy());
                         socket.pipe(stream);
                         stream.pipe(socket);
                     });
@@ -191,6 +186,8 @@ class ForwardConnection {
                     return resolve();
                 }).on('close', () => {
                 }).on('error', (e) => {
+                    SSHConn.closeSSH(sshInfo, this.forwardOptions);
+                    reject(e);
                     // if (e) {
                     //   setTimeout(() => {
                     //     server.close();
@@ -198,6 +195,7 @@ class ForwardConnection {
                     //   }, 5000);
                     // }
                 });
+                server.sockets = new Set();
             });
         });
     }

@@ -12,12 +12,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 
-const { createWriteStream } = require("fs");
-const { extname } = require("path");
-const os = require("os");
-const fs = require("fs-extra");
 const path = require("path");
-const prettyBytes = require("../utils/pretty-bytes.js");
 const vscode = require("vscode");
 const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
@@ -38,24 +33,26 @@ const _core = require("./core-api.js");
 // FTP node classes also loaded lazily in build_children()
 class FTPAPI {
     //ftpvo导入
-    static import_ftpvo(ftpvo) {
+    static async import_ftpvo(ftpvo) {
         const ftpInfo = ftpvo.ftp;
         const workspaces = ftpvo.workspaces;
-        if (FTPVO.put(ftpInfo)) {
-            Console.info((0, Localize)("sshtool.msg.conn.add.ok", FTPVO.title(ftpInfo)));
+        const saved = await FTPVO.persist(ftpInfo, false, undefined, () => {
             for (let r in workspaces) {
                 WorkSpaceVO.put(workspaces[r]);
             }
+        });
+        if (saved) {
+            Console.info((0, Localize)("sshtool.msg.conn.add.ok", FTPVO.title(ftpInfo)));
         }
         else {
             Console.info((0, Localize)("sshtool.msg.conn.add.no", FTPVO.title(ftpInfo)));
         }
     }
     // 批量导入ftpvo  { [key: string]: FTPVO }
-    static import_ftpvos(ftpvos) {
+    static async import_ftpvos(ftpvos) {
         for (let i in ftpvos) {
             const ftpvo = ftpvos[i];
-            FTPAPI.import_ftpvo(ftpvo);
+            await FTPAPI.import_ftpvo(ftpvo);
         }
     }
     //copy file name
@@ -160,88 +157,9 @@ class FTPAPI {
         }));
     }
     //打开文件
-    static file_open(that) {
-        return __awaiter(this, void 0, void 0, function* () {
-            var progressStream = require("../utils/progress-stream.js");
-            const infovo = that.info;
-            const ftpInfo = infovo.ftp;
-            const extName = path.extname(that.file.name).toLowerCase();
-            for (const ext of Settings.ProhibitFileExt) {
-                if (extName == ext) {
-                    Console.warn((0, Localize)("sshtool.msg.api.file.open.err.fileext", extName));
-                    return;
-                }
-            }
-            if (that.file.size > Settings.OpenFileMaxSize * 1048576) {
-                Console.warn((0, Localize)("sshtool.msg.api.file.open.err.filemaxsize", that.file.name, Settings.OpenFileMaxSize + "MB"));
-                return;
-            }
-            const keyDir = `${ftpInfo.ftp.user}@${ftpInfo.ftp.host}#${ftpInfo.ftp.port}`;
-            const { client } = yield FTPConn.get(ftpInfo);
-            let fullPath = that.fullPath;
-            // if (config.info.ostype == OSType.WINDOWS) {
-            // 处理windows 盘符特殊字符转换  
-            fullPath = Util.replace(that.fullPath);
-            // }
-            const tempPath = yield fileManager_1.FileManager.record(`temp/${keyDir}${fullPath}`, null, fileManager_1.FileModel.WRITE);
-            vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("sshtool.msg.api.file.open.title", that.fullPath),
-                cancellable: true
-            }, (progress, token) => {
-                return new Promise((resolve) => {
-                    let mark = setTimeout(() => {
-                        resolve(false);
-                        mark = null;
-                    }, 6000);
-                    const begin_time = new Date().getTime();
-                    let before = 0;
-                    let option = {
-                        step: function (total_transferred, chunk, total) {
-                            const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.open.remaining", prettyBytes(total - total_transferred)) });
-                            before = percentage;
-                        }
-                    };
-                    client.get(that.fullPath, (err, fileReadStream) => __awaiter(this, void 0, void 0, function* () {
-                        if (mark) {
-                            clearTimeout(mark);
-                            const end_time = new Date().getTime();
-                            const time = ((end_time - begin_time) / 1000).toFixed(2);
-                            if (err) {
-                                Console.err(err);
-                            }
-                            else {
-                                var str = progressStream({
-                                    length: that.file.size,
-                                    time: 100
-                                });
-                                const outStream = (0, createWriteStream)(tempPath);
-                                fileReadStream.pipe(str).pipe(outStream);
-                                token.onCancellationRequested(() => {
-                                    fileReadStream.destroy();
-                                    outStream.destroy();
-                                });
-                                outStream.on("finish", () => {
-                                    Console.info((0, Localize)("sshtool.msg.api.file.open.ok", that.fullPath, time));
-                                    const hash_v = Util.fileHash(path.resolve(tempPath));
-                                    Storage.set_temp_file_remote(tempPath, { remote: that.fullPath, ftp: ftpInfo, hash: hash_v });
-                                    vscode.commands.executeCommand('vscode.open', vscode.Uri.file(tempPath));
-                                    resolve(null);
-                                });
-                                outStream.on("error", err => {
-                                    Console.err(err);
-                                    resolve(null);
-                                });
-                                return;
-                            }
-                        }
-                    }));
-                });
-            });
-        });
+    static file_open(node) {
+        return require("../services/remote-file-service.js").RemoteFileService.open("ftp", node);
     }
-    // 统计过滤目录文件
     static file_verify(ftpInfo, path, currpath = null) {
         return __awaiter(this, void 0, void 0, function* () {
             const fpath = currpath ? `${path}/${currpath}` : path;
@@ -293,166 +211,9 @@ class FTPAPI {
         });
     }
     //下载文件
-    static file_download(that) {
-        var _a;
-        if (that.contextValue == constant_1.NodeType.FTP_FOLDER || that.contextValue == constant_1.NodeType.FTP_WORKSPACE) {
-            vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
-                .then((uri) => __awaiter(this, void 0, void 0, function* () {
-                if (uri) {
-                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
-                    if (!remoteCheck.ok) {
-                        Console.warn(remoteCheck.message);
-                        return;
-                    }
-                    const { client } = yield FTPConn.get(that.info.ftp);
-                    var progressStream = require("../utils/progress-stream.js");
-                    let filename = that.contextValue == constant_1.NodeType.FTP_WORKSPACE ? that.workSpace.name : that.file.name;
-                    let dpath;
-                    filename = Util.replace(filename);
-                    if (os.type() == constant_1.OSTypes.WINDOWS) {
-                        dpath = uri[0].path.substr(1) + "/" + filename;
-                    }
-                    else {
-                        dpath = uri[0].path + "/" + filename;
-                    }
-                    const basePath = uri[0].fsPath || uri[0].path;
-                    const saveCheck = validateLocalSavePath(dpath, basePath);
-                    if (!saveCheck.ok) {
-                        Console.warn(saveCheck.message);
-                        return;
-                    }
-                    dpath = saveCheck.value;
-                    //若是目录存在，创建新目录
-                    if (!fs.existsSync(dpath)) {
-                        fs.mkdirpSync(dpath);
-                    }
-                    else {
-                        const str = Math.random().toString(36).substr(2).slice(2, 5);
-                        dpath += "_" + str;
-                        fs.mkdirpSync(dpath);
-                    }
-                    const entrys = (yield FTPAPI.file_verify(that.info.ftp, that.fullPath)) || [];
-                    // console.log("提示", entrys)
-                    const entry_list_size = entrys.length;
-                    if (entry_list_size == 0) {
-                        Console.info((0, Localize)("sshtool.msg.api.file.download.null"));
-                    }
-                    let curr_entry_index = 0;
-                    for (const entry of entrys) {
-                        curr_entry_index += 1;
-                        entry.currpath = entry.currpath ? Util.replace(entry.currpath) : entry.currpath;
-                        let rfile = entry.currpath ? that.fullPath + "/" + entry.currpath + "/" + entry.name : that.fullPath + "/" + entry.name;
-                        let lfile = entry.currpath ? dpath + "/" + entry.currpath + "/" + entry.name : dpath + "/" + entry.name;
-                        let ldir = entry.currpath ? dpath + "/" + entry.currpath : dpath;
-                        let currfile = entry.currpath ? entry.currpath + "/" + entry.name : entry.name;
-                        if (!fs.existsSync(ldir)) {
-                            fs.mkdirpSync(ldir);
-                        }
-                        yield vscode.window.withProgress({
-                            location: vscode.ProgressLocation.Notification,
-                            title: (0, Localize)("sshtool.msg.api.file.download.title", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile}`),
-                            cancellable: true
-                        }, (progress, token) => {
-                            return new Promise((resolve) => {
-                                let mark = setTimeout(() => {
-                                    resolve(false);
-                                    mark = null;
-                                }, 6000);
-                                client.get(rfile, (err, fileReadStream) => __awaiter(this, void 0, void 0, function* () {
-                                    if (mark) {
-                                        clearTimeout(mark);
-                                        var str = progressStream({
-                                            length: entry.size,
-                                            time: 100
-                                        });
-                                        let before = 0;
-                                        str.on("progress", (progressData) => {
-                                            if (progressData.percentage == 100) {
-                                                resolve(null);
-                                                Console.info((0, Localize)("sshtool.msg.api.file.download.ok", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile} to ${ldir}`, progressData.runtime + 1));
-                                                return;
-                                            }
-                                            progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
-                                            before = progressData.percentage;
-                                        });
-                                        str.on("error", err => {
-                                            Console.err(err);
-                                        });
-                                        const outStream = (0, createWriteStream)(lfile);
-                                        fileReadStream.pipe(str).pipe(outStream);
-                                        token.onCancellationRequested(() => {
-                                            fileReadStream.destroy();
-                                            outStream.destroy();
-                                        });
-                                    }
-                                }));
-                                // FTP_core.API.refresh();
-                            });
-                        });
-                    }
-                }
-            }));
-        }
-        else {
-            const extName = (_a = (0, extname)(that.file.name)) === null || _a === void 0 ? void 0 : _a.replace(".", "");
-            vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.name), filters: { "Type": [extName] }, saveLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
-                .then((uri) => __awaiter(this, void 0, void 0, function* () {
-                if (uri) {
-                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
-                    const saveCheck = validateLocalSavePath(uri.fsPath);
-                    if (!remoteCheck.ok || !saveCheck.ok) {
-                        Console.warn((remoteCheck.message || saveCheck.message));
-                        return;
-                    }
-                    const { client } = yield FTPConn.get(that.info.ftp);
-                    var progressStream = require("../utils/progress-stream.js");
-                    vscode.window.withProgress({
-                        location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("sshtool.msg.api.file.download.title", that.fullPath),
-                        cancellable: true
-                    }, (progress, token) => {
-                        return new Promise((resolve) => {
-                            let mark = setTimeout(() => {
-                                resolve(false);
-                                mark = null;
-                            }, 6000);
-                            // const fileReadStream = client.get(that.fullPath)
-                            client.get(that.fullPath, (err, fileReadStream) => __awaiter(this, void 0, void 0, function* () {
-                                if (mark) {
-                                    clearTimeout(mark);
-                                    var str = progressStream({
-                                        length: that.file.size,
-                                        time: 100
-                                    });
-                                    let before = 0;
-                                    str.on("progress", (progressData) => {
-                                        if (progressData.percentage == 100) {
-                                            resolve(null);
-                                            Console.info((0, Localize)("sshtool.msg.api.file.download.ok", that.fullPath, progressData.runtime + 1));
-                                            return;
-                                        }
-                                        progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
-                                        before = progressData.percentage;
-                                    });
-                                    str.on("error", err => {
-                                        Console.err(err);
-                                    });
-                                    const outStream = (0, createWriteStream)(saveCheck.value);
-                                    fileReadStream.pipe(str).pipe(outStream);
-                                    token.onCancellationRequested(() => {
-                                        fileReadStream.destroy();
-                                        outStream.destroy();
-                                    });
-                                }
-                            }));
-                            // FTP_core.API.refresh();
-                        });
-                    });
-                }
-            }));
-        }
+    static file_download(node) {
+        return require("../services/remote-file-service.js").RemoteFileService.download("ftp", node, (info, remote) => FTPAPI.file_verify(info, remote));
     }
-    // 新建目录
     static new_folder(that) {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
@@ -481,43 +242,9 @@ class FTPAPI {
         }));
     }
     // 上传文件
-    static file_upload(that) {
-        vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, canSelectFolders: false, openLabel: (0, Localize)("sshtool.msg.conn.uploadfile") })
-            .then((uri) => __awaiter(this, void 0, void 0, function* () {
-            if (uri) {
-                const url_size = uri.length;
-                let curr_url_index = 0;
-                for (const item of uri) {
-                    curr_url_index += 1;
-                    const targetPath = item.fsPath;
-                    const targetRemotePath = joinRemotePath(that.fullPath, path.basename(targetPath));
-                    const pathCheck = validateRemoteOperationPath(targetRemotePath);
-                    if (!pathCheck.ok) {
-                        Console.warn(pathCheck.message);
-                        continue;
-                    }
-                    yield vscode.window.withProgress({
-                        location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("sshtool.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
-                        cancellable: true
-                    }, (progress, token) => {
-                        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-                            const begin_time = new Date().getTime();
-                            const rt = yield FTPConn.put(that.info.ftp, targetPath, pathCheck.value);
-                            const end_time = new Date().getTime();
-                            const time = ((end_time - begin_time) / 1000).toFixed(2);
-                            if (rt) {
-                                Console.info((0, Localize)("sshtool.msg.api.file.upload.ok", `[${curr_url_index}/${url_size}] ${targetPath}`, time));
-                                resolve(null);
-                            }
-                            _core.API.refresh();
-                        }));
-                    });
-                }
-            }
-        }));
+    static file_upload(node) {
+        return require("../services/remote-file-service.js").RemoteFileService.upload("ftp", node);
     }
-    //根据文件类型，细化处理
     static build_children(that, list, parentName) {
         const { FTPFolderNode } = require("../nodes/ftp-folder-node.js");
         const { FTPFileNode } = require("../nodes/ftp-file-node.js");
@@ -586,61 +313,15 @@ class FTPAPI {
         return [].concat(folderArr).concat(fileArr);
     }
     // 保存文件
-    static file_save(tempPath, tempFile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const remotePath = tempFile.remote;
-            const tftp = tempFile.ftp;
-            const tfHash = tempFile.hash;
-            const currtfHash = Util.fileHash(tempPath);
-            const ftps = FTPAPI.get_ftps();
-            const id = tftp.id;
-            if (ftps[id].status == constant_1.SSHType.ONLINE) {
-            }
-            else {
-                Console.warn((0, Localize)("sshtool.msg.api.file.save.err", remotePath, id));
-                return;
-            }
-            // console.log(tfHash,currtfHash) 
-            if (currtfHash == tfHash) {
-                Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, 0.01));
-                Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ftp: tftp, hash: currtfHash });
-                return;
-            }
-            vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("sshtool.msg.api.file.save.title", remotePath),
-                cancellable: true
-            }, (progress, token) => {
-                return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-                    const begin_time = new Date().getTime();
-                    let before = 0;
-                    let option = {
-                        step: function (total_transferred, chunk, total) {
-                            const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.save.remaining", prettyBytes(total - total_transferred)) });
-                            before = percentage;
-                        }
-                    };
-                    const rt = yield FTPConn.put(tftp, tempPath, remotePath);
-                    const end_time = new Date().getTime();
-                    const time = ((end_time - begin_time) / 1000).toFixed(2);
-                    if (rt) {
-                        Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, time));
-                        Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ftp: tftp, hash: currtfHash });
-                        _core.API.refresh();
-                        resolve(null);
-                    }
-                }));
-            });
-        });
+    static file_save(local, metadata) {
+        return require("../services/remote-file-service.js").RemoteFileService.save("ftp", local, metadata);
     }
-    // 添加修改连接，处理connect view页面事件
     static ftp_save(ftpInfo, flag = "add") {
         new FTPService().createFTPView(ftpInfo, flag);
     }
     // 删除某个配置信息
-    static ftp_delete(info) {
-        FTPVO.del(info.ftp.id);
+    static async ftp_delete(info) {
+        await FTPVO.del(info.ftp.id);
         Console.info((0, Localize)("sshtool.msg.conn.delete.ok", FTPVO.title(info.ftp)));
         _core.API.refresh();
     }

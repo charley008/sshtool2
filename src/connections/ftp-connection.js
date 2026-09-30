@@ -7,6 +7,7 @@ const { Client: BasicFTPClient, FileType } = require("basic-ftp");
 const { Console } = require("../ui/console.js");
 const { FTPVO } = require("../models/ftp-model.js");
 const { FTPCredentialService } = require("../services/ftp-credential-service.js");
+const { AsyncQueue } = require("../utils/async-queue.js");
 
 class FTP {
 }
@@ -35,57 +36,61 @@ function normalizeListEntry(entry) {
 class FTPClientAdapter {
     constructor(client) {
         this.client = client;
+        this.queue = new AsyncQueue();
     }
+    run(action) { return this.queue.run(() => action(this.client)); }
 
     get(remotePath, callback) {
         const stream = new PassThrough();
         callback(null, stream);
-        this.client.downloadTo(stream, remotePath).catch((err) => {
+        this.run(client => client.downloadTo(stream, remotePath)).catch((err) => {
             stream.destroy(err);
         });
     }
 
     put(localPath, remotePath, callback) {
-        this.client.uploadFrom(localPath, remotePath)
+        this.run(client => client.uploadFrom(localPath, remotePath))
             .then(() => callback(null))
             .catch(callback);
     }
 
     rename(oldPath, newPath, callback) {
-        this.client.rename(oldPath, newPath)
+        this.run(client => client.rename(oldPath, newPath))
             .then(() => callback(null))
             .catch(callback);
     }
 
     list(remotePath, callback) {
-        this.client.list(remotePath)
+        this.run(client => client.list(remotePath))
             .then((list) => callback(null, list.map(normalizeListEntry)))
             .catch(callback);
     }
 
     rmdir(remotePath, callback) {
-        this.client.removeEmptyDir(remotePath)
+        this.run(client => client.removeEmptyDir(remotePath))
             .then(() => callback(null))
             .catch(callback);
     }
 
     mkdir(remotePath, callback) {
-        this.client.send(`MKD ${remotePath}`)
+        this.run(client => client.send(`MKD ${remotePath}`))
             .then(() => callback(null))
             .catch(callback);
     }
 
     delete(remotePath, callback) {
-        this.client.remove(remotePath)
+        this.run(client => client.remove(remotePath))
             .then(() => callback(null))
             .catch(callback);
     }
 
     end() {
+        this.queue.close();
         this.client.close();
     }
 
     destroy() {
+        this.queue.close();
         this.client.close();
     }
 
@@ -138,29 +143,38 @@ class FTPConn {
         };
     }
 
-    static get(ftpInfo) {
-        const key = ftpInfo.id;
+    static get(ftpInfo, fresh = false) {
+        if (this.blocked) return Promise.reject(new Error("Connections are being cleared."));
+        const key = fresh ? "test:" + require("crypto").randomUUID() : ftpInfo.id;
+        const signature = JSON.stringify(FTPCredentialService.sanitize(ftpInfo).ftp);
+        const previous = this.activeFTPConn[key] || this.pending.get(key);
+        if (previous && previous.signature !== signature) this.closeFTP({ id: key });
         if (this.activeFTPConn[key] && this.activeFTPConn[key].client.closed) {
             delete this.activeFTPConn[key];
         }
         if (this.activeFTPConn[key]) {
-            if (ftpInfo.status == 0) {
-                return Promise.resolve(this.activeFTPConn[key]);
-            }
-            this.closeFTP(ftpInfo);
+            return Promise.resolve(this.activeFTPConn[key]);
         }
+        if (this.pending.has(key)) return this.pending.get(key).promise;
 
         const client = new BasicFTPClient(10000);
-        return FTPCredentialService.hydrate(ftpInfo)
-            .then((hydratedFtpInfo) => client.access(this.accessOptions(hydratedFtpInfo)))
+        const record = { client, promise: null, signature };
+        record.promise = FTPCredentialService.hydrate(ftpInfo)
+            .then((hydratedFtpInfo) => {
+                if (this.pending.get(key) !== record) throw new Error("FTP connection cancelled.");
+                return client.access(this.accessOptions(hydratedFtpInfo));
+            })
             .then(() => {
-                this.activeFTPConn[key] = { client: new FTPClientAdapter(client) };
+                if (this.pending.get(key) !== record) { client.close(); throw new Error("FTP connection cancelled."); }
+                this.activeFTPConn[key] = { client: new FTPClientAdapter(client), signature, key };
                 return this.activeFTPConn[key];
             })
             .catch((err) => {
                 client.close();
                 throw err;
-            });
+            }).finally(() => { if (this.pending.get(key) === record) this.pending.delete(key); });
+        this.pending.set(key, record);
+        return record.promise;
     }
 
     static verifyFTP(ftpInfo) {
@@ -174,11 +188,18 @@ class FTPConn {
     static closeFTP(ftpInfo) {
         this.clearListCache(ftpInfo);
         const key = ftpInfo.id;
+        const pending = this.pending.get(key);
+        this.pending.delete(key);
+        if (pending) pending.client.close();
         if (this.activeFTPConn[key]) {
             this.activeFTPConn[key].client.end();
             delete this.activeFTPConn[key];
         }
         return Promise.resolve({ client: null });
+    }
+    static closeAll() {
+        for (const id of new Set([...Object.keys(this.activeFTPConn), ...this.pending.keys()])) this.closeFTP({ id });
+        this.listCache = {};
     }
 
     static withTimeout(ftpInfo, action, fallback) {
@@ -207,66 +228,36 @@ class FTPConn {
         });
     }
 
-    static put(ftpInfo, lfile, rfile) {
-        return this.withTimeout(ftpInfo, async () => {
-            const { client } = await this.get(ftpInfo);
-            await client.client.uploadFrom(lfile, rfile);
-            this.clearListCache(ftpInfo);
-            return true;
-        }, false);
+    static async operation(info, action, fallback) {
+        try {
+            const { client } = await this.get(info);
+            return await client.run(raw => this.withTimeout(info, () => action(raw), fallback));
+        } catch (error) { Console.warn(error.message); return fallback; }
     }
-
-    static rename(ftpInfo, oldname, newname) {
-        return this.withTimeout(ftpInfo, async () => {
-            const { client } = await this.get(ftpInfo);
-            await client.client.rename(oldname, newname);
-            this.clearListCache(ftpInfo);
-            return true;
-        }, false);
+    static async put(info, local, remote) {
+        const result = await this.operation(info, async raw => { await raw.uploadFrom(local, remote); return true; }, false);
+        if (result) this.clearListCache(info);
+        return result;
     }
-
-    static list(ftpInfo, rforder) {
-        return this.withTimeout(ftpInfo, async () => {
-            const cachedList = this.getCachedList(ftpInfo, rforder);
-            if (cachedList) {
-                return cachedList;
-            }
-            const { client } = await this.get(ftpInfo);
-            const list = await client.client.list(rforder);
-            const normalized = list.map(normalizeListEntry);
-            this.setCachedList(ftpInfo, rforder, normalized);
-            return this.cloneList(normalized);
-        }, null);
+    static async mutate(info, method, args) {
+        const result = await this.operation(info, async raw => { await raw[method](...args); return true; }, false);
+        if (result) this.clearListCache(info);
+        return result;
     }
-
-    static rmdir(ftpInfo, rforder) {
-        return this.withTimeout(ftpInfo, async () => {
-            const { client } = await this.get(ftpInfo);
-            await client.client.removeEmptyDir(rforder);
-            this.clearListCache(ftpInfo);
-            return true;
-        }, false);
+    static rename(info, from, to) { return this.mutate(info, "rename", [from, to]); }
+    static async list(info, remote) {
+        const cached = this.getCachedList(info, remote);
+        if (cached) return cached;
+        const result = await this.operation(info, async raw => (await raw.list(remote)).map(normalizeListEntry), null);
+        if (result) this.setCachedList(info, remote, result);
+        return this.cloneList(result);
     }
-
-    static mkdir(ftpInfo, rforder) {
-        return this.withTimeout(ftpInfo, async () => {
-            const { client } = await this.get(ftpInfo);
-            await client.client.send(`MKD ${rforder}`);
-            this.clearListCache(ftpInfo);
-            return true;
-        }, false);
-    }
-
-    static delete(ftpInfo, rfile) {
-        return this.withTimeout(ftpInfo, async () => {
-            const { client } = await this.get(ftpInfo);
-            await client.client.remove(rfile);
-            this.clearListCache(ftpInfo);
-            return true;
-        }, false);
-    }
+    static rmdir(info, remote) { return this.mutate(info, "removeEmptyDir", [remote]); }
+    static mkdir(info, remote) { return this.mutate(info, "send", ["MKD " + remote]); }
+    static delete(info, remote) { return this.mutate(info, "remove", [remote]); }
 }
 exports.FTPConn = FTPConn;
 FTPConn.activeFTPConn = {};
+FTPConn.pending = new Map();
 FTPConn.listCache = {};
 FTPConn.listCacheTTL = 15000;

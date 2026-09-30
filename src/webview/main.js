@@ -764,12 +764,8 @@ const TerminalPage = defineComponent({
         term?.write(data || "");
       }),
       bus.on("data", (data) => term?.write(data || "")),
-      bus.on("path", (path) => {
-        bus.emit("data", `cd ${path}\n`);
-        term?.focus();
-      }),
-      bus.on("winpath", (path) => {
-        bus.emit("data", `cd /d ${path}\n`);
+      bus.on("pathCommand", (command) => {
+        bus.emit("data", command);
         term?.focus();
       }),
       bus.on("options", (payload) => {

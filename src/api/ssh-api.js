@@ -12,12 +12,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 
-const fs_1 = require("fs");
-const { extname } = require("path");
 const os = require("os");
-const fs = require("fs-extra");
 const path = require("path");
-const prettyBytes = require("../utils/pretty-bytes.js");
 const vscode = require("vscode");
 const { Console } = require("../ui/console.js");
 const constant_1 = require("../shared/constants.js");
@@ -65,41 +61,41 @@ class SSHAPI {
         Util.copyToBoard(cpstr);
     }
     //sshvo导入
-    static import_sshvo(sshvo) {
-        const sshInfo = sshvo.ssh;
-        if (sshInfo && !sshInfo.name && sshInfo.ssh) {
-            sshInfo.name = `${sshInfo.ssh.username || 'root'}@${sshInfo.ssh.host || 'unknown'}`;
-        }
-        if (sshInfo && !sshInfo.group) {
-            sshInfo.group = 'default';
-        }
-        SSHCredentialService.saveFrom(sshInfo).catch((err) => {
-            console.warn("[SSH Tools] Failed to import SSH credentials:", err && err.message ? err.message : err);
+    static async import_sshvo(sshvo) {
+        return require("../services/config-mutation.js").ConfigMutation.run(async () => {
+            const sshInfo = sshvo.ssh;
+            if (sshInfo && !sshInfo.name && sshInfo.ssh) {
+                sshInfo.name = `${sshInfo.ssh.username || 'root'}@${sshInfo.ssh.host || 'unknown'}`;
+            }
+            if (sshInfo && !sshInfo.group) {
+                sshInfo.group = 'default';
+            }
+            if (!sshInfo.id) sshInfo.id = require("crypto").randomUUID();
+            await SSHCredentialService.saveFrom(sshInfo);
+            const remotes = sshvo.remotes;
+            const forwards = sshvo.forwards;
+            const workspaces = sshvo.workspaces;
+            const saved = SSHVO.put(sshInfo);
+            if (saved) {
+                for (let r in remotes) {
+                    RemoteVO.put(remotes[r]);
+                }
+                for (let r in forwards) {
+                    ForwardVO.put(forwards[r]);
+                }
+                for (let r in workspaces) {
+                    WorkSpaceVO.put(workspaces[r]);
+                }
+            }
+            await require("../storage/base-dt.js").BaseDT.flush();
+            Console.info((0, Localize)(saved ? "sshtool.msg.conn.add.ok" : "sshtool.msg.conn.add.no", SSHVO.title(sshInfo)));
         });
-        const remotes = sshvo.remotes;
-        const forwards = sshvo.forwards;
-        const workspaces = sshvo.workspaces;
-        if (SSHVO.put(sshInfo)) {
-            Console.info((0, Localize)("sshtool.msg.conn.add.ok", SSHVO.title(sshInfo)));
-            for (let r in remotes) {
-                RemoteVO.put(remotes[r]);
-            }
-            for (let r in forwards) {
-                ForwardVO.put(forwards[r]);
-            }
-            for (let r in workspaces) {
-                WorkSpaceVO.put(workspaces[r]);
-            }
-        }
-        else {
-            Console.info((0, Localize)("sshtool.msg.conn.add.no", SSHVO.title(sshInfo)));
-        }
     }
     // 批量导入sshvo  { [key: string]: SSHVO }
-    static import_sshvos(sshvos) {
+    static async import_sshvos(sshvos) {
         for (let i in sshvos) {
             const sshvo = sshvos[i];
-            SSHAPI.import_sshvo(sshvo);
+            await SSHAPI.import_sshvo(sshvo);
         }
     }
     //copy file name
@@ -220,71 +216,9 @@ class SSHAPI {
         }));
     }
     //打开文件
-    static file_open(that) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const sshInfo = that.info.ssh;
-            const ssh = sshInfo.ssh;
-            const extName = path.extname(that.file.filename).toLowerCase();
-            for (const ext of Settings.ProhibitFileExt) {
-                if (extName == ext) {
-                    Console.warn((0, Localize)("sshtool.msg.api.file.open.err.fileext", extName));
-                    return;
-                }
-            }
-            if (that.file.attrs.size > Settings.OpenFileMaxSize * 1048576) {
-                Console.warn((0, Localize)("sshtool.msg.api.file.open.err.filemaxsize", that.file.filename, Settings.OpenFileMaxSize + "MB"));
-                return;
-            }
-            const keyDir = `${ssh.username}@${ssh.host}#${ssh.port}`;
-            const { sftp } = yield SSHConn.get(sshInfo);
-            let fullPath = that.fullPath;
-            // if (config.info.ostype == OSType.WINDOWS) {
-            // 处理windows 盘符特殊字符转换  
-            fullPath = Util.replace(that.fullPath);
-            // }
-            const tempPath = yield fileManager_1.FileManager.record(`temp/${keyDir}${fullPath}`, null, fileManager_1.FileModel.WRITE);
-            vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("sshtool.msg.api.file.open.title", that.fullPath),
-                cancellable: true
-            }, (progress, token) => {
-                return new Promise((resolve) => {
-                    let mark = setTimeout(() => {
-                        resolve(false);
-                        mark = null;
-                    }, 6000);
-                    const begin_time = new Date().getTime();
-                    let before = 0;
-                    let option = {
-                        step: function (total_transferred, chunk, total) {
-                            const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.open.remaining", prettyBytes(total - total_transferred)) });
-                            before = percentage;
-                        }
-                    };
-                    sftp.fastGet(that.fullPath, tempPath, option, (err) => __awaiter(this, void 0, void 0, function* () {
-                        if (mark) {
-                            clearTimeout(mark);
-                            const end_time = new Date().getTime();
-                            const time = ((end_time - begin_time) / 1000).toFixed(2);
-                            if (err) {
-                                Console.err(err);
-                            }
-                            else {
-                                Console.info((0, Localize)("sshtool.msg.api.file.open.ok", that.fullPath, time));
-                                const hash_v = Util.fileHash(path.resolve(tempPath));
-                                Storage.set_temp_file_remote(tempPath, { remote: that.fullPath, ssh: sshInfo, hash: hash_v });
-                                vscode.commands.executeCommand('vscode.open', vscode.Uri.file(tempPath));
-                                resolve(null);
-                                return;
-                            }
-                        }
-                    }));
-                });
-            });
-        });
+    static file_open(node) {
+        return require("../services/remote-file-service.js").RemoteFileService.open("ssh", node);
     }
-    // 统计过滤目录文件
     static file_verify(sshInfo, path, currpath = null) {
         const fpath = currpath ? `${path}/${currpath}` : path;
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
@@ -331,162 +265,9 @@ class SSHAPI {
         }));
     }
     //下载文件
-    static file_download(that) {
-        var _a;
-        if (that.contextValue == constant_1.NodeType.SSH_FOLDER || that.contextValue == constant_1.NodeType.SSH_WORKSPACE) {
-            vscode.window.showOpenDialog({ canSelectFiles: false, canSelectMany: false, canSelectFolders: true, openLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
-                .then((uri) => __awaiter(this, void 0, void 0, function* () {
-                if (uri) {
-                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
-                    if (!remoteCheck.ok) {
-                        Console.warn(remoteCheck.message);
-                        return;
-                    }
-                    const { sftp } = yield SSHConn.get(that.info.ssh);
-                    var progressStream = require("../utils/progress-stream.js");
-                    let filename = that.contextValue == constant_1.NodeType.SSH_WORKSPACE ? that.workSpace.name : that.file.filename;
-                    let dpath;
-                    filename = Util.replace(filename);
-                    if (os.type() == constant_1.OSTypes.WINDOWS) {
-                        dpath = uri[0].path.substr(1) + "/" + filename;
-                    }
-                    else {
-                        dpath = uri[0].path + "/" + filename;
-                    }
-                    const basePath = uri[0].fsPath || uri[0].path;
-                    const saveCheck = validateLocalSavePath(dpath, basePath);
-                    if (!saveCheck.ok) {
-                        Console.warn(saveCheck.message);
-                        return;
-                    }
-                    dpath = saveCheck.value;
-                    //若是目录存在，创建新目录
-                    if (!fs.existsSync(dpath)) {
-                        fs.mkdirpSync(dpath);
-                    }
-                    else {
-                        const str = Math.random().toString(36).substr(2).slice(2, 5);
-                        dpath += "_" + str;
-                        fs.mkdirpSync(dpath);
-                    }
-                    const entrys = (yield SSHAPI.file_verify(that.info.ssh, that.fullPath)) || [];
-                    const entry_list_size = entrys.length;
-                    if (entry_list_size == 0) {
-                        Console.info((0, Localize)("sshtool.msg.api.file.download.null"));
-                    }
-                    let curr_entry_index = 0;
-                    for (const entry of entrys) {
-                        curr_entry_index += 1;
-                        entry.currpath = entry.currpath ? Util.replace(entry.currpath) : entry.currpath;
-                        let rfile = entry.currpath ? that.fullPath + "/" + entry.currpath + "/" + entry.filename : that.fullPath + "/" + entry.filename;
-                        let lfile = entry.currpath ? dpath + "/" + entry.currpath + "/" + entry.filename : dpath + "/" + entry.filename;
-                        let ldir = entry.currpath ? dpath + "/" + entry.currpath : dpath;
-                        let currfile = entry.currpath ? entry.currpath + "/" + entry.filename : entry.filename;
-                        if (!fs.existsSync(ldir)) {
-                            fs.mkdirpSync(ldir);
-                        }
-                        yield vscode.window.withProgress({
-                            location: vscode.ProgressLocation.Notification,
-                            title: (0, Localize)("sshtool.msg.api.file.download.title", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile}`),
-                            cancellable: true
-                        }, (progress, token) => {
-                            return new Promise((resolve) => {
-                                let mark = setTimeout(() => {
-                                    resolve(null);
-                                    mark = null;
-                                }, 6000);
-                                const fileReadStream = sftp.createReadStream(rfile);
-                                if (mark) {
-                                    clearTimeout(mark);
-                                    var str = progressStream({
-                                        length: entry.attrs.size,
-                                        time: 100
-                                    });
-                                    let before = 0;
-                                    str.on("progress", (progressData) => {
-                                        if (progressData.percentage == 100) {
-                                            resolve(null);
-                                            Console.info((0, Localize)("sshtool.msg.api.file.download.ok", `[${curr_entry_index}/${entry_list_size}] ${that.fullPath} for ${currfile} to ${ldir}`, progressData.runtime + 1));
-                                            return;
-                                        }
-                                        progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
-                                        before = progressData.percentage;
-                                    });
-                                    str.on("error", err => {
-                                        Console.err(err);
-                                    });
-                                    const outStream = (0, fs_1.createWriteStream)(lfile);
-                                    fileReadStream.pipe(str).pipe(outStream);
-                                    token.onCancellationRequested(() => {
-                                        fileReadStream.destroy();
-                                        outStream.destroy();
-                                    });
-                                }
-                                // API.refresh();
-                            });
-                        });
-                    }
-                }
-            }));
-        }
-        else {
-            const extName = (_a = (0, extname)(that.file.filename)) === null || _a === void 0 ? void 0 : _a.replace(".", "");
-            vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(that.file.filename), filters: { "Type": [extName] }, saveLabel: (0, Localize)("sshtool.msg.conn.downloadfile") })
-                .then((uri) => __awaiter(this, void 0, void 0, function* () {
-                if (uri) {
-                    const remoteCheck = validateRemoteOperationPath(that.fullPath);
-                    const saveCheck = validateLocalSavePath(uri.fsPath);
-                    if (!remoteCheck.ok || !saveCheck.ok) {
-                        Console.warn((remoteCheck.message || saveCheck.message));
-                        return;
-                    }
-                    const { sftp } = yield SSHConn.get(that.info.ssh);
-                    var progressStream = require("../utils/progress-stream.js");
-                    vscode.window.withProgress({
-                        location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("sshtool.msg.api.file.download.title", that.fullPath),
-                        cancellable: true
-                    }, (progress, token) => {
-                        return new Promise((resolve) => {
-                            let mark = setTimeout(() => {
-                                resolve(null);
-                                mark = null;
-                            }, 6000);
-                            const fileReadStream = sftp.createReadStream(that.fullPath);
-                            if (mark) {
-                                clearTimeout(mark);
-                                var str = progressStream({
-                                    length: that.file.attrs.size,
-                                    time: 100
-                                });
-                                let before = 0;
-                                str.on("progress", (progressData) => {
-                                    if (progressData.percentage == 100) {
-                                        resolve(null);
-                                        Console.info((0, Localize)("sshtool.msg.api.file.download.ok", that.fullPath, progressData.runtime + 1));
-                                        return;
-                                    }
-                                    progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.download.remaining", prettyBytes(progressData.remaining)) });
-                                    before = progressData.percentage;
-                                });
-                                str.on("error", err => {
-                                    Console.err(err);
-                                });
-                                const outStream = (0, fs_1.createWriteStream)(saveCheck.value);
-                                fileReadStream.pipe(str).pipe(outStream);
-                                token.onCancellationRequested(() => {
-                                    fileReadStream.destroy();
-                                    outStream.destroy();
-                                });
-                            }
-                            // API.refresh();
-                        });
-                    });
-                }
-            }));
-        }
+    static file_download(node) {
+        return require("../services/remote-file-service.js").RemoteFileService.download("ssh", node, (info, remote) => SSHAPI.file_verify(info, remote));
     }
-    // 新建目录
     static new_folder(that) {
         vscode.window.showInputBox({ placeHolder: (0, Localize)("sshtool.msg.api.folder.new.title"), ignoreFocusOut: true }).then((input) => __awaiter(this, void 0, void 0, function* () {
             if (input === undefined) return;
@@ -516,66 +297,8 @@ class SSHAPI {
         }));
     }
     // 上传文件
-    static file_upload(that) {
-        vscode.window.showOpenDialog({ canSelectFiles: true, canSelectMany: true, canSelectFolders: false, openLabel: (0, Localize)("sshtool.msg.conn.uploadfile") })
-            .then((uri) => __awaiter(this, void 0, void 0, function* () {
-            if (uri) {
-                const { sftp } = yield SSHConn.get(that.info.ssh);
-                var progressStream = require("../utils/progress-stream.js");
-                const url_size = uri.length;
-                let curr_url_index = 0;
-                for (const item of uri) {
-                    curr_url_index += 1;
-                    const targetPath = item.fsPath;
-                    const targetRemotePath = joinRemotePath(that.fullPath, path.basename(targetPath));
-                    const pathCheck = validateRemoteOperationPath(targetRemotePath);
-                    if (!pathCheck.ok) {
-                        Console.warn(pathCheck.message);
-                        continue;
-                    }
-                    yield vscode.window.withProgress({
-                        location: vscode.ProgressLocation.Notification,
-                        title: (0, Localize)("sshtool.msg.api.file.upload.title", `[${curr_url_index}/${url_size}] ${targetPath}`),
-                        cancellable: true
-                    }, (progress, token) => {
-                        return new Promise((resolve) => {
-                            let mark = setTimeout(() => {
-                                resolve(null);
-                                mark = null;
-                            }, 6000);
-                            const fileReadStream = (0, fs_1.createReadStream)(targetPath);
-                            if (mark) {
-                                clearTimeout(mark);
-                                var str = progressStream({
-                                    length: (0, fs_1.statSync)(targetPath).size,
-                                    time: 100
-                                });
-                                let before = 0;
-                                str.on("progress", (progressData) => {
-                                    if (progressData.percentage == 100) {
-                                        resolve(null);
-                                        Console.info((0, Localize)("sshtool.msg.api.file.upload.ok", `[${curr_url_index}/${url_size}] ${targetPath}`, progressData.runtime + 1));
-                                        return;
-                                    }
-                                    progress.report({ increment: progressData.percentage - before, message: (0, Localize)("sshtool.msg.api.file.upload.remaining", prettyBytes(progressData.remaining)) });
-                                    before = progressData.percentage;
-                                });
-                                str.on("error", err => {
-                                    Console.err(err);
-                                });
-                                const outStream = sftp.createWriteStream(pathCheck.value);
-                                fileReadStream.pipe(str).pipe(outStream);
-                                token.onCancellationRequested(() => {
-                                    fileReadStream.destroy();
-                                    outStream.destroy();
-                                });
-                                API.refresh();
-                            }
-                        });
-                    });
-                }
-            }
-        }));
+    static file_upload(node) {
+        return require("../services/remote-file-service.js").RemoteFileService.upload("ssh", node);
     }
     static start_socks5_proxy(sshInfo) {
         const vo = SSHVO.get(sshInfo.id);
@@ -736,74 +459,15 @@ class SSHAPI {
         return [].concat(folderArr).concat(fileArr);
     }
     // 保存文件
-    static file_save(tempPath, tempFile) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const remotePath = tempFile.remote;
-            const tssh = tempFile.ssh;
-            const tfHash = tempFile.hash;
-            const currtfHash = Util.fileHash(tempPath);
-            const sshs = SSHAPI.get_sshs();
-            const id = tssh.id;
-            if (sshs[id].status == constant_1.SSHType.ONLINE) {
-            }
-            else {
-                Console.warn((0, Localize)("sshtool.msg.api.file.save.err", remotePath, id));
-                return;
-            }
-            // console.log(tfHash,currtfHash) 
-            if (currtfHash == tfHash) {
-                Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, 0.01));
-                Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ssh: tssh, hash: currtfHash });
-                return;
-            }
-            const { sftp } = yield SSHConn.get(tssh);
-            vscode.window.withProgress({
-                location: vscode.ProgressLocation.Notification,
-                title: (0, Localize)("sshtool.msg.api.file.save.title", remotePath),
-                cancellable: true
-            }, (progress, token) => {
-                return new Promise((resolve) => {
-                    let mark = setTimeout(() => {
-                        resolve(null);
-                        mark = null;
-                    }, 6000);
-                    const begin_time = new Date().getTime();
-                    let before = 0;
-                    let option = {
-                        step: function (total_transferred, chunk, total) {
-                            const percentage = Math.floor(total_transferred / total * 100);
-                            progress.report({ increment: percentage - before, message: (0, Localize)("sshtool.msg.api.file.save.remaining", prettyBytes(total - total_transferred)) });
-                            before = percentage;
-                        }
-                    };
-                    sftp.fastPut(tempPath, remotePath, option, (err) => __awaiter(this, void 0, void 0, function* () {
-                        if (mark) {
-                            clearTimeout(mark);
-                            const end_time = new Date().getTime();
-                            const time = ((end_time - begin_time) / 1000).toFixed(2);
-                            if (err) {
-                                Console.err(err);
-                            }
-                            else {
-                                Console.info((0, Localize)("sshtool.msg.api.file.save.ok", remotePath, time));
-                                Storage.touch_temp_file_remote(tempPath, { remote: remotePath, ssh: tssh, hash: currtfHash });
-                                API.refresh();
-                                resolve(null);
-                                return;
-                            }
-                        }
-                    }));
-                });
-            });
-        });
+    static file_save(local, metadata) {
+        return require("../services/remote-file-service.js").RemoteFileService.save("ssh", local, metadata);
     }
-    // 添加修改连接，处理connect view页面事件
     static ssh_save(sshInfo, flag = "add") {
         new SSHService().createSSHView(sshInfo, flag);
     }
     // 删除某个配置信息
-    static ssh_delete(info) {
-        SSHVO.del(info.ssh.id);
+    static async ssh_delete(info) {
+        await SSHVO.del(info.ssh.id);
         Console.info((0, Localize)("sshtool.msg.conn.delete.ok", SSHVO.title(info.ssh)));
         API.refresh();
     }

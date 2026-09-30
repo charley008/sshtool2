@@ -35,7 +35,7 @@ class SSHDT extends BaseDT {
     }
 
     static update_sshs(sshs) {
-        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_SSH, sshs);
+        BaseDT.write(this.context, CacheKey.SSHTOOL_CACHEKEY_DATA_SSH, sshs);
     }
 
     static verify_ssh(id) {
@@ -80,7 +80,7 @@ class SSHDT extends BaseDT {
     }
 
     static delete_sshs() {
-        this.sshs = null;
+        this.sshs = {};
         this.update_sshs({});
     }
 

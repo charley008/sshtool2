@@ -35,7 +35,7 @@ class WorkspaceDT extends BaseDT {
     }
 
     static update_workspaces(workspaces) {
-        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_WORKSPACE, workspaces);
+        BaseDT.write(this.context, CacheKey.SSHTOOL_CACHEKEY_DATA_WORKSPACE, workspaces);
         return true;
     }
 
@@ -66,7 +66,7 @@ class WorkspaceDT extends BaseDT {
     }
 
     static delete_workspaces() {
-        this.workspaces = null;
+        this.workspaces = {};
         this.update_workspaces({});
         return true;
     }

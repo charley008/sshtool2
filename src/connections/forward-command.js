@@ -69,12 +69,7 @@ class ForwardCommand {
         const fwds = Storage.get_forwards_server();
         const fwd = fwds[forward.id];
         if (fwd) {
-            if (os.type() == OSTypes.WINDOWS) {
-                execFile("taskkill", ["/F", "/PID", String(fwd.pid), "/T"]);
-            }
-            else {
-                execFile("kill", ["-9", String(fwd.pid)]);
-            }
+            await require("../utils/runtime-resource.js").stopResource(fwd);
             delete fwds[forward.id];
             Storage.update_forwards_server(fwds);
         }

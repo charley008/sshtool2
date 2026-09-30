@@ -40,7 +40,7 @@ if (loadErrors.length > 0) {
 
 let serviceManager;
 
-function activate(context) {
+async function activate(context) {
     console.log('[SSH Tools] Activating...');
 
     if (loadErrors.length > 0) {
@@ -50,6 +50,7 @@ function activate(context) {
 
     try {
         serviceManager = new ServiceManager(context);
+        await serviceManager.ready;
         console.log('[SSH Tools] ServiceManager created');
     } catch (e) {
         vscode.window.showErrorMessage('ServiceManager error: ' + e.message);
@@ -147,10 +148,10 @@ function activate(context) {
     console.log('[SSH Tools] Registered ' + ok + ' commands (' + fail + ' failed). Activated.');
 }
 
-function deactivate() {
+async function deactivate() {
     console.log('[SSH Tools] Deactivating');
     if (serviceManager) {
-        try { serviceManager.cleanup(); } catch (e) { console.error('[SSH Tools] Cleanup failed:', e); }
+        try { await serviceManager.cleanup(); } catch (e) { console.error('[SSH Tools] Cleanup failed:', e); }
     }
 }
 

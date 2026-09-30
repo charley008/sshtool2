@@ -94,260 +94,121 @@ class SSHConn {
             });
         });
     }
-    static get(sshInfo, withSftp = true, forwardOption = null) {
-        let key = sshInfo.id;
-        let option = {
-            readyTimeout: 1000 * 5,
-            keepaliveInterval: 1000 * 5,
-            keepaliveCountMax: 3,
-        };
-        if (forwardOption) {
-            key = forwardOption.fid;
-            option = Object.assign({ readyTimeout: 1000 * 60, keepaliveInterval: 1000 * 12, keepaliveCountMax: 5 }, forwardOption);
-        }
-        if (this.activeConn[key]) {
-            if (sshInfo.status == 0) {
-                return Promise.resolve(this.activeConn[key]);
-            }
-            this.closeSSH(sshInfo, forwardOption);
-        }
-        // config.ssh = API.config_filter(config.ssh);  
-        const client = new Client();
-        return new Promise((resolve, reject) => {
-            let settled = false;
-            const finishResolve = (value) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                resolve(value);
-            };
-            const finishReject = (err) => {
-                if (settled) {
-                    return;
-                }
-                settled = true;
-                if (forwardOption) {
-                    this.closeSSH(sshInfo, forwardOption);
-                }
-                else {
-                    this.closeSSH(sshInfo);
-                }
-                reject(err);
-            };
-            client.on('ready', () => {
-                if (withSftp) {
-                    client.sftp((err, sftp) => {
-                        if (err) {
-                            finishReject(err);
-                            return;
-                        }
-                        this.activeConn[key] = { client, sftp };
-                        finishResolve(this.activeConn[key]);
-                    });
-                }
-                else if (forwardOption) {
-                    this.activeConn[key] = { client, sftp: null };
-                    finishResolve(this.activeConn[key]);
-                }
-                else {
-                    finishResolve({ client, sftp: null });
-                }
-            }).on('error', (err) => {
-                // Console.err({message:`${SSHVO.title(sshInfo)},${err.message}`});
-                finishReject(err);
-                // resolve(null)
-            }).on('end', () => {
-                if (this.activeConn[key]) {
-                    this.activeConn[key].client.destroy();
-                    delete this.activeConn[key];
-                }
-            });
-            SSHCredentialService.hydrate(sshInfo).then((hydratedSshInfo) => {
-                const connectOptions = forwardOption ? Promise.resolve({ option, jumpKey: null }) : this.openJumpStream(hydratedSshInfo, option);
-                return connectOptions.then(({ option: effectiveOption }) => {
-                    client.connect(cloneConnectOptions(hydratedSshInfo, effectiveOption));
+    static ensureSftp(connection) {
+        if (connection.sftp) return Promise.resolve(connection);
+        if (!connection.sftpPromise) {
+            connection.sftpPromise = new Promise((resolve, reject) => {
+                connection.client.sftp((error, sftp) => {
+                    if (error) return reject(error);
+                    connection.sftp = sftp;
+                    resolve(connection);
                 });
-            }).catch(finishReject);
+            }).catch(error => { connection.sftpPromise = null; throw error; });
+        }
+        return connection.sftpPromise;
+    }
+    static get(sshInfo, withSftp = true, forwardOption = null, fresh = false) {
+        if (this.blocked) return Promise.reject(new Error("Connections are being cleared."));
+        const key = fresh ? "test:" + require("crypto").randomUUID() : forwardOption ? forwardOption.fid : sshInfo.id;
+        const signature = JSON.stringify(SSHCredentialService.sanitize(sshInfo).ssh);
+        const previous = this.activeConn[key] || this.pending.get(key);
+        if (previous && previous.signature !== signature) this.closeKey(key);
+        if (this.activeConn[key]) {
+            return withSftp ? this.ensureSftp(this.activeConn[key]) : Promise.resolve(this.activeConn[key]);
+        }
+        const pending = this.pending.get(key);
+        if (pending) return pending.promise.then(conn => withSftp ? this.ensureSftp(conn) : conn);
+        const client = new Client();
+        const connection = { client, sftp: null, signature };
+        const record = { client, signature, promise: null, reject: null };
+        const cleanup = () => {
+            if (this.activeConn[key] === connection) delete this.activeConn[key];
+            if (this.pending.get(key) === record) this.pending.delete(key);
+            this.clearListCache(sshInfo);
+        };
+        record.promise = new Promise((resolve, reject) => {
+            record.reject = reject;
+            client.once("ready", () => {
+                if (this.pending.get(key) !== record) { client.destroy(); return; }
+                this.pending.delete(key);
+                this.activeConn[key] = connection;
+                resolve(connection);
+            });
+            client.on("error", error => { cleanup(); client.destroy(); reject(error); });
+            const ended = () => { cleanup(); reject(new Error("SSH connection closed.")); };
+            client.once("end", ended);
+            client.once("close", ended);
         });
+        this.pending.set(key, record);
+        SSHCredentialService.hydrate(sshInfo).then(async hydrated => {
+            let option = Object.assign({ readyTimeout: 10000, keepaliveInterval: 5000, keepaliveCountMax: 3 }, forwardOption || {});
+            if (!option.sock) option = (await this.openJumpStream(hydrated, option)).option;
+            if (this.pending.get(key) !== record) { if (option.sock) option.sock.destroy(); return; }
+            client.connect(cloneConnectOptions(hydrated, option));
+        }).catch(error => { cleanup(); client.destroy(); record.reject(error); });
+        return record.promise.then(conn => withSftp ? this.ensureSftp(conn) : conn);
     }
     static verifySSH(sshInfo, forwardOption = null) {
-        let key = sshInfo.id;
-        if (forwardOption) {
-            key = forwardOption.fid;
-        }
-        if (this.activeConn[key]) {
-            return Promise.resolve(this.activeConn[key]);
-        }
-        return Promise.resolve({ client: null, sftp: null });
+        return Promise.resolve(this.activeConn[forwardOption ? forwardOption.fid : sshInfo.id] || { client: null, sftp: null });
+    }
+    static closeKey(key) {
+        const pending = this.pending.get(key);
+        this.pending.delete(key);
+        const active = this.activeConn[key];
+        delete this.activeConn[key];
+        if (pending) pending.reject(new Error("SSH connection cancelled."));
+        const client = active ? active.client : pending && pending.client;
+        if (client) { client.end(); client.destroy(); }
     }
     static closeSSH(sshInfo, forwardOption = null) {
         this.clearListCache(sshInfo);
-        let key = sshInfo.id;
-        if (forwardOption) {
-            key = forwardOption.fid;
-        }
-        if (this.activeConn[key]) {
-            this.activeConn[key].client.end();
-            if (this.activeConn[key]) {
-                this.activeConn[key].client.destroy();
-                delete this.activeConn[key];
-            }
-        }
+        this.closeKey(forwardOption ? forwardOption.fid : sshInfo.id);
         return Promise.resolve({ client: null, sftp: null });
     }
-    static list(sshInfo, rforder) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            const cachedList = this.getCachedList(sshInfo, rforder);
-            if (cachedList) {
-                resolve(cachedList);
-                return;
-            }
-            let mark = setTimeout(() => {
-                resolve(null);
-                mark = null;
-                Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
-                this.closeSSH(sshInfo);
-            }, 8000);
-            try {
-                const { client, sftp } = yield this.get(sshInfo);
-                if (!sftp) {
-                    throw new Error("SFTP channel is not available");
-                }
-                sftp.readdir(rforder, (err, list) => {
-                    if (mark) {
-                        clearTimeout(mark);
-                        if (err) {
-                            Console.warn(`List ${SSHVO.title(sshInfo)} ${rforder} failed: ${err.message || err}`);
-                            resolve(null);
-                            return;
-                        }
-                        this.setCachedList(sshInfo, rforder, list);
-                        resolve(this.cloneList(list));
-                    }
-                });
-            }
-            catch (err) {
-                if (mark) {
-                    clearTimeout(mark);
-                    Console.warn(`List ${SSHVO.title(sshInfo)} ${rforder} failed: ${err.message || err}`);
-                    resolve(null);
-                }
-            }
-        }));
+    static closeAll() {
+        for (const key of new Set([...Object.keys(this.activeConn), ...this.pending.keys()])) this.closeKey(key);
+        this.listCache = {};
     }
-    static rename(sshInfo, oldname, newname) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let mark = setTimeout(() => {
-                resolve(false);
-                mark = null;
-                Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
-                this.closeSSH(sshInfo);
-            }, 8000);
-            const { client, sftp } = yield this.get(sshInfo);
-            sftp.rename(oldname, newname, err => {
-                if (mark) {
-                    clearTimeout(mark);
-                    if (err) {
-                        resolve(false);
-                        return;
-                    }
-                    this.clearListCache(sshInfo);
-                    resolve(true);
-                }
-            });
-        }));
+    static async operation(info, method, args, fallback) {
+        let timer;
+        try {
+            return await Promise.race([
+                (async () => {
+                    const { sftp } = await this.get(info);
+                    return await new Promise((resolve, reject) => {
+                        sftp[method](...args, (error, result) => error ? reject(error) : resolve(result === undefined ? true : result));
+                    });
+                })(),
+                new Promise((resolve, reject) => { timer = setTimeout(() => {
+                    this.closeSSH(info);
+                    reject(new Error("SFTP operation timed out."));
+                }, 10000); }),
+            ]);
+        } catch (error) {
+            Console.warn(error.message);
+            return fallback;
+        } finally { clearTimeout(timer); }
     }
-    static put(sshInfo, lfile, rfile) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let mark = setTimeout(() => {
-                resolve(false);
-                mark = null;
-                Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
-                this.closeSSH(sshInfo);
-            }, 8000);
-            const { client, sftp } = yield this.get(sshInfo);
-            sftp.fastPut(lfile, rfile, err => {
-                if (mark) {
-                    clearTimeout(mark);
-                    if (err) {
-                        resolve(false);
-                        return;
-                    }
-                    this.clearListCache(sshInfo);
-                    resolve(true);
-                }
-            });
-        }));
+    static async list(info, remotePath) {
+        const cached = this.getCachedList(info, remotePath);
+        if (cached) return cached;
+        const list = await this.operation(info, "readdir", [remotePath], null);
+        if (list) this.setCachedList(info, remotePath, list);
+        return this.cloneList(list);
     }
-    static rmdir(sshInfo, rforder) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let mark = setTimeout(() => {
-                resolve(false);
-                mark = null;
-                Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
-                this.closeSSH(sshInfo);
-            }, 8000);
-            const { client, sftp } = yield this.get(sshInfo);
-            sftp.rmdir(rforder, err => {
-                if (mark) {
-                    clearTimeout(mark);
-                    if (err) {
-                        resolve(false);
-                        return;
-                    }
-                    this.clearListCache(sshInfo);
-                    resolve(true);
-                }
-            });
-        }));
+    static async mutate(info, method, args) {
+        const result = await this.operation(info, method, args, false);
+        if (result) this.clearListCache(info);
+        return result;
     }
-    static mkdir(sshInfo, rforder) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let mark = setTimeout(() => {
-                resolve(false);
-                mark = null;
-                Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
-                this.closeSSH(sshInfo);
-            }, 8000);
-            const { client, sftp } = yield this.get(sshInfo);
-            sftp.mkdir(rforder, err => {
-                if (mark) {
-                    clearTimeout(mark);
-                    if (err) {
-                        resolve(false);
-                        return;
-                    }
-                    this.clearListCache(sshInfo);
-                    resolve(true);
-                }
-            });
-        }));
-    }
-    static delete(sshInfo, rfile) {
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let mark = setTimeout(() => {
-                resolve(false);
-                mark = null;
-                Console.info(`Timeout ${SSHVO.title(sshInfo)}`);
-                this.closeSSH(sshInfo);
-            }, 8000);
-            const { client, sftp } = yield this.get(sshInfo);
-            sftp.unlink(rfile, err => {
-                if (mark) {
-                    clearTimeout(mark);
-                    if (err) {
-                        resolve(false);
-                        return;
-                    }
-                    this.clearListCache(sshInfo);
-                    resolve(true);
-                }
-            });
-        }));
-    }
+    static rename(info, from, to) { return this.mutate(info, "rename", [from, to]); }
+    static put(info, local, remote) { return this.mutate(info, "fastPut", [local, remote]); }
+    static mkdir(info, remote) { return this.mutate(info, "mkdir", [remote]); }
+    static rmdir(info, remote) { return this.mutate(info, "rmdir", [remote]); }
+    static delete(info, remote) { return this.mutate(info, "unlink", [remote]); }
 }
 exports.SSHConn = SSHConn;
 SSHConn.activeConn = {};
+SSHConn.pending = new Map();
 SSHConn.listCache = {};
 SSHConn.listCacheTTL = 15000;

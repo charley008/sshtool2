@@ -5,6 +5,7 @@
 const path = require("path");
 const { Settings } = require("../utils/settings.js");
 const { CacheKey } = require("../shared/constants.js");
+const { BaseDT } = require("./base-dt.js");
 class Storage {
     static init(context) {
         this.context = context;
@@ -14,13 +15,13 @@ class Storage {
         return this.context.globalState.get(CacheKey.SSH_LIST) || {};
     }
     static update_ssh_list(ssh_list) {
-        this.context.globalState.update(CacheKey.SSH_LIST, ssh_list);
+        BaseDT.write(this.context, CacheKey.SSH_LIST, ssh_list);
     }
     static get_conections_config() {
         return this.context.globalState.get(CacheKey.CONECTIONS_CONFIG) || {};
     }
     static delete_configs() {
-        this.context.globalState.update(CacheKey.CONECTIONS_CONFIG, {});
+        BaseDT.write(this.context, CacheKey.CONECTIONS_CONFIG, {});
     }
     static get_temp_file_remotes() {
         const tempFileRemotes = Settings.SaveLocalFileTempCacheInformation
@@ -31,7 +32,7 @@ class Storage {
     static update_temp_file_remotes(temp_file_remotes) {
         const normalized = this.normalize_temp_file_remotes(temp_file_remotes);
         if (Settings.SaveLocalFileTempCacheInformation) {
-            this.context.globalState.update(CacheKey.TEMP_FILE_REMOTES, normalized);
+            BaseDT.write(this.context, CacheKey.TEMP_FILE_REMOTES, normalized);
         }
         else {
             this.tempFileRemotes = normalized;
@@ -114,24 +115,25 @@ class Storage {
     }
     // private static  tempStatusBar:{ [key: string]: any} = {};
     static get_status_bars() {
-        return this.context.globalState.get(CacheKey.TEMP_STATUS_BAR) || {};
+        return Object.assign({}, this.context.globalState.get(CacheKey.TEMP_STATUS_BAR) || {});
         // return this.tempStatusBar;
     }
     static update_status_bars(bars) {
-        this.context.globalState.update(CacheKey.TEMP_STATUS_BAR, bars);
+        if (JSON.stringify(this.get_status_bars()) === JSON.stringify(bars)) return;
+        BaseDT.write(this.context, CacheKey.TEMP_STATUS_BAR, bars);
         // this.tempStatusBar = bars;
     }
     static get_status_keys() {
         return this.context.globalState.get(CacheKey.TEMP_KEYS) || {};
     }
     static update_status_keys(keys) {
-        this.context.globalState.update(CacheKey.TEMP_KEYS, keys);
+        BaseDT.write(this.context, CacheKey.TEMP_KEYS, keys);
     }
     static get_ssh_host_keys() {
         return this.context.globalState.get(CacheKey.SSH_HOST_KEYS) || {};
     }
     static update_ssh_host_keys(hostKeys) {
-        this.context.globalState.update(CacheKey.SSH_HOST_KEYS, hostKeys || {});
+        BaseDT.write(this.context, CacheKey.SSH_HOST_KEYS, hostKeys || {});
     }
     static async clear_extension_state() {
         const keysToDelete = [

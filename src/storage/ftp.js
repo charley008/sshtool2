@@ -57,14 +57,13 @@ class FTPDT extends BaseDT {
     static get_ftps() {
         this.Init();
         this.ftps = this.normalize_ftps(this.ftps);
-        this.update_ftps(this.ftps);
         // 排序
         this.ftps = this.rsort(this.ftps);
         return this.ftps;
     }
 
     static update_ftps(ftps) {
-        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_FTP, ftps);
+        BaseDT.write(this.context, CacheKey.SSHTOOL_CACHEKEY_DATA_FTP, ftps);
     }
 
     static verify_ftp(id) {
@@ -77,6 +76,7 @@ class FTPDT extends BaseDT {
 
     static update_ftp(ftp) {
         this.Init();
+        if (!ftp || !this.ftps[ftp.id]) return false;
         ftp = this.normalize_ftp(ftp);
         const id = ftp.id;
         this.ftps[id] = ftp;
@@ -109,7 +109,7 @@ class FTPDT extends BaseDT {
     }
 
     static delete_ftps() {
-        this.ftps = null;
+        this.ftps = {};
         this.update_ftps({});
     }
 

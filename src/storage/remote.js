@@ -35,14 +35,16 @@ class RemoteDT extends BaseDT {
     }
 
     static update_remotes(remotes) {
-        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_REMOTE, remotes);
+        BaseDT.write(this.context, CacheKey.SSHTOOL_CACHEKEY_DATA_REMOTE, remotes);
     }
 
     static update_remote(remote) {
         this.Init();
+        if (!remote || !this.remotes[remote.id]) return false;
         const id = remote.id;
         this.remotes[id] = remote;
         this.update_remotes(this.remotes);
+        return true;
     }
 
     static insert_remote(remote) {
@@ -50,6 +52,7 @@ class RemoteDT extends BaseDT {
         const id = remote.id;
         this.remotes[id] = remote;
         this.update_remotes(this.remotes);
+        return true;
     }
 
     static delete_remote(id) {
@@ -60,7 +63,7 @@ class RemoteDT extends BaseDT {
     }
 
     static delete_remotes() {
-        this.remotes = null;
+        this.remotes = {};
         this.update_remotes({});
     }
 }

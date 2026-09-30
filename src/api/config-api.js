@@ -101,8 +101,8 @@ class ConfigAPI {
                 const flag = reg.test(host_title);
                 Console.info((0, Localize)("sshtool.msg.import.info.clipboard", host_title));
                 if (host_title && info_text && flag) {
-                    Util.confirm(`${(0, Localize)("sshtool.msg.import.title")} ${host_title}?`, () => {
-                        ConfigAPI.import_configvo(info_text);
+                    Util.confirm(`${(0, Localize)("sshtool.msg.import.title")} ${host_title}?`, async () => {
+                        await ConfigAPI.import_configvo(info_text);
                         _core.API.refresh();
                     });
                 } else {
@@ -115,17 +115,17 @@ class ConfigAPI {
         }
     }
 
-    static import_configvo(data) {
+    static async import_configvo(data) {
         try {
             data = Util.deSign(data);
             const configvo = JSON.parse(data);
             if (configvo.type == constant_1.Type.SSH) {
                 const sshvos = configvo.sshvo;
-                _ssh.SSHAPI.import_sshvo(sshvos);
+                await _ssh.SSHAPI.import_sshvo(sshvos);
             }
             if (configvo.type == constant_1.Type.FTP) {
                 const ftpvo = configvo.ftpvo;
-                _ftp.FTPAPI.import_ftpvo(ftpvo);
+                await _ftp.FTPAPI.import_ftpvo(ftpvo);
             }
         } catch (e) {
             Console.warn((0, Localize)("sshtool.msg.import.err.design"));
@@ -133,19 +133,23 @@ class ConfigAPI {
         }
     }
 
-    static import_configvos(configvos) {
+    static async import_configvos(configvos) {
+        const { ConfigMutation } = require("../services/config-mutation.js");
+        const epoch = ConfigMutation.epoch;
         try {
             for (let id in configvos) {
+                if (epoch !== ConfigMutation.epoch) throw new Error("Import cancelled by configuration cleanup.");
                 const configvo = configvos[id];
                 if (configvo.type == constant_1.Type.SSH) {
                     const sshvos = configvo.sshvo;
-                    _ssh.SSHAPI.import_sshvo(sshvos);
+                    await _ssh.SSHAPI.import_sshvo(sshvos);
                 }
                 if (configvo.type == constant_1.Type.FTP) {
                     const ftpvo = configvo.ftpvo;
-                    _ftp.FTPAPI.import_ftpvo(ftpvo);
+                    await _ftp.FTPAPI.import_ftpvo(ftpvo);
                 }
             }
+            await require("../storage/base-dt.js").BaseDT.flush();
         } catch (e) {
             Console.warn((0, Localize)("sshtool.msg.import.err.design"));
             throw e;
@@ -199,13 +203,20 @@ class ConfigAPI {
     }
 
     static async clear() {
-        const currentSshIds = Object.keys(SSHVO.getAll() || {});
-        const currentFtpIds = Object.keys(FTPVO.getAll() || {});
-        SSHVO.delAll();
-        FTPVO.delAll();
-        await SSHCredentialService.deleteMany(currentSshIds);
-        await FTPCredentialService.deleteMany(currentFtpIds);
-        await Storage.clear_extension_state();
+        return require("../services/config-mutation.js").ConfigMutation.clear(async () => {
+            const { RuntimeService } = require("../services/runtime-service.js");
+            const { BaseDT } = require("../storage/base-dt.js");
+            try {
+                await RuntimeService.closeAll();
+                await BaseDT.flush();
+                await SSHVO.delAll();
+                await FTPVO.delAll();
+                await Storage.clear_extension_state();
+                await BaseDT.flush();
+            } finally {
+                RuntimeService.resume();
+            }
+        });
     }
 
     static manager() {

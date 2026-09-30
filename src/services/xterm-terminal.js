@@ -25,6 +25,9 @@ const { SSHVO } = require("../models/ssh-model.js");
 const { SSHConn } = require("../connections/ssh-connection.js");
 const { SSHCredentialService } = require("./ssh-credential-service.js");
 const { SSHHostKeyService } = require("./ssh-hostkey-service.js");
+const { TerminalLog } = require("../utils/terminal-log.js");
+const { directoryCommand } = require("../utils/shell-path.js");
+const { StringDecoder } = require("string_decoder");
 
 function cloneTerminalConnectOptions(sshinfo, option) {
     const ssh = Object.assign({}, sshinfo.ssh || {});
@@ -41,15 +44,10 @@ class XtermTerminal {
     }
     openPath(sshinfo, fullPath) {
         return __awaiter(this, void 0, void 0, function* () {
-            const handler = XtermTerminal.handlerMap.get(this.getTitle(sshinfo));
-            if (handler) {
-                if (sshinfo.ssh.ostype == constant_1.OSTypes.WINDOWS) {
-                    fullPath = fullPath.substr(1) + "/";
-                    handler.emit('winpath', fullPath);
-                }
-                else {
-                    handler.emit('path', fullPath);
-                }
+            const command = directoryCommand(fullPath, sshinfo.ssh.ostype == constant_1.OSTypes.WINDOWS);
+            const session = Array.from(XtermTerminal.handlerMap.values()).reverse().find(session => session.sshId === sshinfo.id && session.ready);
+            if (session) {
+                session.handler.emit('pathCommand', command);
             }
             else {
                 this.openMethod(sshinfo, () => { this.openPath(sshinfo, fullPath); });
@@ -70,12 +68,20 @@ class XtermTerminal {
     handlerEvent(handler, sshinfo, callback) {
         // const sshUrl = this.getSshUrl(sshinfo);
         const title = this.getTitle(sshinfo);
-        let dataBuffer = [];
+        const sessionId = require("crypto").randomUUID();
+        const dataBuffer = new TerminalLog();
+        const decoder = new StringDecoder("utf8");
+        let started = false;
+        let disposed = false;
+        let session;
+        handler.on("dispose", () => { disposed = true; if (session) session.end(); });
         handler.on("init", (content) => {
             handler.emit("route", 'sshXterm');
         }).on("route-sshXterm", (content) => {
             handler.emit("terminal", {});
         }).on("initTerminal", (content) => {
+            if (started || disposed || SSHConn.blocked) return;
+            started = true;
             handler.emit('connecting', `Connecting ${title}...\r\n`);
             let termCols, termRows;
             if (content) {
@@ -84,9 +90,14 @@ class XtermTerminal {
             }
             const client = new Client();
             const end = () => {
+                if (session.ended) return;
+                session.ended = true;
+                XtermTerminal.handlerMap.delete(sessionId);
                 client.end();
-                XtermTerminal.handlerMap.delete(title);
+                client.destroy();
             };
+            session = { sshId: sshinfo.id, handler, client, end, ready: false, ended: false };
+            XtermTerminal.handlerMap.set(sessionId, session);
             const sshlog = (state, message, err = null) => {
                 // handler.emit('ssherror', (err) ? `${message}: ${err.message}` : message);
                 const msg = (err) ? `${message}: ${err.message}` : message;
@@ -104,10 +115,10 @@ class XtermTerminal {
                 Console.info(`${title},${msg}`);
             };
             const keys = Storage.get_status_keys();
-            const options = keys[constant_1.TempKeys.TEMP_KEYS_TerminalOptions];
+            const options = keys[constant_1.TempKeys.TEMP_KEYS_TerminalOptions] || { fontSize: 18 };
             handler.emit('options', { options: options });
             client.on('ready', () => {
-                XtermTerminal.handlerMap.set(title, handler);
+                if (disposed) { end(); return; }
                 client.shell({ term: 'xterm-color', cols: termCols, rows: termRows }, (err, stream) => {
                     if (err) {
                         sshlog(false, 'EXEC ERROR' + err, null);
@@ -119,7 +130,7 @@ class XtermTerminal {
                         stream.write(data);
                     }).on('resize', (data) => {
                         const keys = Storage.get_status_keys();
-                        const tmpTerminalOptions = keys[constant_1.TempKeys.TEMP_KEYS_TerminalOptions];
+                        const tmpTerminalOptions = keys[constant_1.TempKeys.TEMP_KEYS_TerminalOptions] || {};
                         const currTerminalOptions = data.terminalOptions;
                         const tmpTimeStamp = tmpTerminalOptions.timestamp ? tmpTerminalOptions.timestamp : 0;
                         const currTimeStamp = currTerminalOptions.timestamp ? currTerminalOptions.timestamp : 0;
@@ -134,12 +145,11 @@ class XtermTerminal {
                         stream.setWindow(data.rows, data.cols, data.height, data.width);
                     }).on('openLink', uri => {
                         vscode.env.openExternal(vscode.Uri.parse(uri));
-                    }).on('dispose', () => {
-                        end();
                     });
+                    session.ready = true;
                     stream.on('data', (data) => {
-                        handler.emit('data', data.toString('utf-8'));
-                        dataBuffer = dataBuffer.concat(data);
+                        handler.emit('data', decoder.write(data));
+                        dataBuffer.append(data);
                     });
                     stream.on('close', (code, signal) => {
                         end();
@@ -157,13 +167,14 @@ class XtermTerminal {
             });
             SSHCredentialService.hydrate(sshinfo).then((hydratedSshInfo) => {
                 return SSHConn.openJumpStream(hydratedSshInfo, {}).then(({ option }) => {
+                    if (session.ended) { if (option.sock) option.sock.destroy(); return; }
                     client.connect(cloneTerminalConnectOptions(hydratedSshInfo, option));
                 });
             }).catch((err) => {
                 sshlog(false, 'CONN ERROR', err);
             });
         }).on('openLog', () => __awaiter(this, void 0, void 0, function* () {
-            const keyDir = `${sshinfo.ssh.username}@${sshinfo.ssh.host}#${sshinfo.ssh.port}`;
+            const keyDir = sessionId + ".log";
             yield fileManager_1.FileManager.record(`logs/${keyDir}`, dataBuffer.toString().replace(/[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g, ''), fileManager_1.FileModel.WRITE);
             fileManager_1.FileManager.show(`logs/${keyDir}`).then((textEditor) => {
                 const lineCount = textEditor.document.lineCount;
@@ -172,6 +183,12 @@ class XtermTerminal {
                 textEditor.revealRange(range);
             });
         }));
+    }
+    static closeForConnection(id) {
+        for (const session of Array.from(this.handlerMap.values())) if (session.sshId === id) { session.end(); session.handler.panel?.dispose(); }
+    }
+    static closeAll() {
+        for (const session of Array.from(this.handlerMap.values())) { session.end(); session.handler.panel?.dispose(); }
     }
 }
 exports.XtermTerminal = XtermTerminal;

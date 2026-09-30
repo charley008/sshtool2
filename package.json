@@ -2,7 +2,7 @@
   "name": "sshtools2",
   "displayName": "SSH Tools 2",
   "description": "SSH Tools 2 for VS Code; SSH, SFTP, FTP, remote desktop, port forwarding, and jump host support",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "publisher": "charley008",
   "engines": {
     "vscode": "^1.85.0"
@@ -613,6 +613,7 @@
     }
   },
   "scripts": {
+    "test": "node scripts/test-ssh-credentials.js && node scripts/test-ftp-credentials.js && node scripts/test-path-guard.js && node --test scripts/test-runtime.js && node scripts/test-extension.js",
     "vscode:prepublish": "webpack --mode production",
     "build": "webpack --mode production",
     "recover:out": "node ../scripts/recover-out.js",

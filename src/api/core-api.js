@@ -32,22 +32,15 @@ const { QuickPickItemVo } = require("../models/quick-pick-item.js");
 const { ForwardVO } = require("../models/forward-model.js");
 const { RemoteVO } = require("../models/remote-model.js");
 const { FTPVO } = require("../models/ftp-model.js");
-const { SSHAPI } = require("./ssh-api.js");
-const { FTPAPI } = require("./ftp-api.js");
 const { GroupAPI } = require("./group-api.js");
 const { ConfigAPI } = require("./config-api.js");
 class API {
     //init自动刷新
-    static auto() {
+    static async auto() {
         Console.debug("api.ts func auto begin");
-        this.init_update_configs_version();
+        await this.init_update_configs_version();
         this.auto_verify();
-        this.autoVerifyStatusBars();
-        this.autoOnlineRefresh();
-        this.autoOfflineRefresh();
-        this.autoManagerRefresh();
-        this.autoWorkspaceOnlineRefresh();
-        this.autoWorkspaceOfflineRefresh();
+        this.startRefresh();
         this.autoVerifyTempFileRemotes();
         this.init_keys();
         Console.debug("api.ts func auto end");
@@ -169,87 +162,67 @@ class API {
             Console.debug("api.ts func autoVerifyTempFileRemotes end");
         });
     }
-    static init_update_configs_version() {
+    static async init_update_configs_version() {
         Console.debug("api.ts func init_update_configs_version begin");
         const configs = Storage.get_conections_config();
         if (Object.keys(configs).length > 0) {
             const configvos = Util.configs_old_2_new(configs);
-            ConfigAPI.import_configvos(configvos);
+            await ConfigAPI.import_configvos(configvos);
             Storage.delete_configs();
         }
         Console.debug("api.ts func init_update_configs_version end");
     }
     //自动检查主机主机、forward、rdesktop状态
     static auto_verify() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                API.auto_varify_icmp();
-            }, Settings.PingHostTime * 1000));
-        });
+        this.verificationPaused = false;
+        if (this.verifyTimer) return;
+        const schedule = () => {
+            if (this.verificationPaused || this.verifyTimer) return;
+            this.verifyTimer = setTimeout(async () => {
+                this.verifyTimer = null;
+                try { await this.auto_varify_icmp(); }
+                catch (error) { Console.err(error); }
+                schedule();
+            }, Math.max(1000, Settings.PingHostTime * 1000));
+        };
+        schedule();
     }
-    //自动刷新 ssh 在线视图
-    static autoOnlineRefresh() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                vscode.commands.executeCommand(constant_1.Command.ONLINE_REFRESH);
-            }, Settings.RefreshNodeTime * 1000));
-        });
+    static stopVerification() {
+        this.verificationPaused = true;
+        this.verifyGeneration = (this.verifyGeneration || 0) + 1;
+        clearTimeout(this.verifyTimer);
+        this.verifyTimer = null;
+        for (const socket of this.probeSockets || []) socket.destroy();
+        return this.verifyRun ? this.verifyRun.catch(() => {}) : Promise.resolve();
     }
-    //自动刷新 ssh 离线视图
-    static autoOfflineRefresh() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                vscode.commands.executeCommand(constant_1.Command.OFFLINE_REFRESH);
-            }, Settings.RefreshNodeTime * 1000));
-        });
+    static startRefresh() {
+        clearInterval(this.refreshTimer);
+        this.refreshTimer = setInterval(() => this.refresh(), Math.max(1000, Settings.RefreshNodeTime * 1000));
     }
-    //自动刷新 ssh 管理视图
-    static autoManagerRefresh() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                vscode.commands.executeCommand(constant_1.Command.MANAGER_REFRESH);
-            }, Settings.RefreshNodeTime * 1000));
-        });
-    }
-    //自动刷新 workspace 在线视图
-    static autoWorkspaceOnlineRefresh() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                vscode.commands.executeCommand(constant_1.Command.WORKSPACE_ONLINE_REFRESH);
-            }, Settings.RefreshNodeTime * 1000));
-        });
-    }
-    //自动刷新 workspace 离线视图
-    static autoWorkspaceOfflineRefresh() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                vscode.commands.executeCommand(constant_1.Command.WORKSPACE_OFFLINE_REFRESH);
-            }, Settings.RefreshNodeTime * 1000));
-        });
-    }
-    static autoVerifyStatusBars() {
-        return __awaiter(this, void 0, void 0, function* () {
-            _sm.default._intervals.push(setInterval(function () {
-                API.init_status_bar();
-            }, Settings.RefreshNodeTime * 1000));
-        });
+    static stopRefresh() {
+        clearInterval(this.refreshTimer);
+        this.refreshTimer = null;
     }
     // 添加信息 主机  或  ftp
     static probeTcp(host, port, timeout = 2000) {
         return new Promise((resolve) => {
             const socket = net.createConnection({ host, port: Number(port), timeout });
+            if (!this.probeSockets) this.probeSockets = new Set();
+            this.probeSockets.add(socket);
             let settled = false;
             const finish = (open) => {
                 if (settled) {
                     return;
                 }
                 settled = true;
+                this.probeSockets.delete(socket);
                 socket.destroy();
                 resolve(open);
             };
             socket.on("connect", () => finish(true));
             socket.on("timeout", () => finish(false));
             socket.on("error", () => finish(false));
+            socket.on("close", () => finish(false));
         });
     }
     static open_add() {
@@ -409,85 +382,58 @@ class API {
     }
     // 自动检查主机是否在线
     static auto_varify_icmp() {
-        return __awaiter(this, void 0, void 0, function* () {
-            const sshs = require("./ssh-api.js").SSHAPI.get_sshs();
-            const ftps = require("./ftp-api.js").FTPAPI.get_ftps();
-            const forwards_server = Storage.get_forwards_server();
-            const rdesktops_server = Storage.get_rdesktops_server();
-            for (let i in sshs) {
-                // ping.sys.probe(ssh[i].host, function(isAlive){ 
-                //     if(isAlive){
-                //         ssh[i].info.status = SSHType.ONLINE; 
-                //     }else{   
-                //         ssh[i].info.status = SSHType.OFFLINE;
-                //     } 
-                // })
-                const ssh = sshs[i];
-                const sshvo = SSHVO.get(ssh.id);
-                // 检测主机是否在线 
-                const isOpen = yield API.probeTcp(ssh.ssh.host, ssh.ssh.port, Settings.PingHostTime * 1000);
-                const latestSsh = SSHVO.get(ssh.id).ssh;
-                if (latestSsh) {
-                    latestSsh.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
-                    SSHVO.post(latestSsh);
-                }
-                // 检测forward运行状态
-                const forwards = sshvo.forwards;
-                if (Object.keys(forwards).length > 0) {
-                    for (let f in forwards) {
-                        const forward = forwards[f];
-                        if (forwards_server[forward.id]) {
-                            if (forwards_server[forward.id].pid) {
-                                //检查进程是否存在
-                                const processes = yield (0, GetProcesses)();
-                                const p = processes.find(v => v.pid === forwards_server[forward.id].pid);
-                                p ? forward.status = true : forward.status = false;
-                            }
-                            else {
-                                forward.status = true;
-                            }
-                        }
+        if (this.verificationPaused) return Promise.resolve();
+        if (this.verifyRun) return this.verifyRun;
+        const generation = this.verifyGeneration || 0;
+        const run = (async () => {
+            const targets = [
+                ...Object.values(SSHVO.getAll()).map(info => ({ kind: "ssh", info })),
+                ...Object.values(FTPVO.getAll()).map(info => ({ kind: "ftp", info })),
+            ];
+            let cursor = 0;
+            const worker = async () => {
+                while (cursor < targets.length && generation === (this.verifyGeneration || 0)) {
+                    const { kind, info } = targets[cursor++];
+                    const config = info[kind];
+                    let open;
+                    if (kind === "ssh" && config.jump && config.jump.enabled) {
+                        const conn = require("../connections/ssh-connection.js").SSHConn;
+                        const existing = await conn.verifySSH(info);
+                        if (existing.client) open = true;
                         else {
-                            forward.status = false;
+                            try {
+                                const { client } = await conn.get(info, false, null, true);
+                                client.end(); client.destroy(); open = true;
+                            } catch (_) { open = false; }
                         }
-                        ForwardVO.post(forward);
+                    } else {
+                        open = await this.probeTcp(config.host, config.port, 2000);
                     }
+                    if (generation !== (this.verifyGeneration || 0)) return;
+                    const model = kind === "ssh" ? SSHVO : FTPVO;
+                    const latest = model.get(info.id)[kind];
+                    if (!latest || JSON.stringify(latest[kind]) !== JSON.stringify(config)) continue;
+                    const status = open ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
+                    if (latest.status !== status) model.post(Object.assign({}, latest, { status }));
                 }
-                // 检测rdesktop运行状态
-                const remotes = sshvo.remotes;
-                if (Object.keys(remotes).length > 0) {
-                    for (let ri in remotes) {
-                        const remote = remotes[ri];
-                        if (rdesktops_server[ri]) {
-                            if (rdesktops_server[ri].pid) {
-                                //检查进程是否存在
-                                const processes = yield (0, GetProcesses)();
-                                const p = processes.find(v => v.pid === rdesktops_server[ri].pid);
-                                p ? remote.status = true : remote.status = false;
-                            }
-                            else {
-                                remote.status = true;
-                            }
-                        }
-                        else {
-                            remote.status = false;
-                        }
-                        RemoteVO.post(remote);
-                    }
+            };
+            await Promise.all(Array.from({ length: Math.min(4, targets.length) }, worker));
+            const resources = [Storage.get_forwards_server(), Storage.get_rdesktops_server()];
+            const hasProcesses = resources.some(items => Object.values(items).some(item => item.pid));
+            const processes = hasProcesses ? await GetProcesses() : [];
+            if (generation !== (this.verifyGeneration || 0)) return;
+            for (const [model, live] of [[ForwardVO, resources[0]], [RemoteVO, resources[1]]]) {
+                for (const item of Object.values(model.getAll())) {
+                    const running = live[item.id];
+                    const status = !!running && (!running.pid || processes.some(process => process.pid === running.pid));
+                    if (item.status !== status) model.post(Object.assign({}, item, { status }));
                 }
             }
-            for (let i in ftps) {
-                const ftp = ftps[i];
-                const ftpvo = FTPVO.get(ftp.id);
-                // 检测主机是否在线 
-                const isOpen = yield API.probeTcp(ftp.ftp.host, ftp.ftp.port, Settings.PingHostTime * 1000);
-                const latestFtp = FTPVO.get(ftp.id).ftp;
-                if (latestFtp) {
-                    latestFtp.status = isOpen ? constant_1.SSHType.ONLINE : constant_1.SSHType.OFFLINE;
-                    FTPVO.post(latestFtp);
-                }
-            }
-        });
+            await require("../storage/base-dt.js").BaseDT.flush();
+        })();
+        this.verifyRun = run;
+        run.finally(() => { if (this.verifyRun === run) this.verifyRun = null; }).catch(() => {});
+        return run;
     }
     //重新加载sshtools
     static reload() {

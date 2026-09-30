@@ -43,10 +43,10 @@ class ServiceManager {
         this._disposables.push(vscode.workspace.onDidChangeConfiguration(event => {
             if (event.affectsConfiguration('SSHTOOLTools')) {
                 Settings.reload();
+                API.startRefresh();
             }
         }));
-        try { API.auto(); }
-        catch(e) { console.error('[SSH Tools] API.auto() failed:', e.message || e); }
+        this.ready = API.auto();
     }
     init() {
         if (this.isInit)
@@ -80,16 +80,21 @@ class ServiceManager {
         this.isInit = true;
         return res;
     }
-    cleanup() {
-        if (ServiceManager._intervals) {
-            ServiceManager._intervals.forEach(id => clearInterval(id));
-            ServiceManager._intervals = [];
-        }
-        if (this._disposables) {
-            this._disposables.forEach(disposable => {
-                try { disposable.dispose(); } catch (e) {}
-            });
-            this._disposables = [];
+    async cleanup() {
+        API.stopRefresh();
+        try {
+            await require("./runtime-service.js").RuntimeService.closeAll();
+        } finally {
+            if (ServiceManager._intervals) {
+                ServiceManager._intervals.forEach(id => clearInterval(id));
+                ServiceManager._intervals = [];
+            }
+            if (this._disposables) {
+                this._disposables.forEach(disposable => {
+                    try { disposable.dispose(); } catch (e) {}
+                });
+                this._disposables = [];
+            }
         }
     }
 }

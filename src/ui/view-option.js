@@ -20,7 +20,12 @@ class Handler {
     }
 
     on(event, callback) {
-        this.eventEmitter.on(event, callback);
+        this.eventEmitter.on(event, (...args) => {
+            Promise.resolve().then(() => callback(...args)).catch(error => {
+                this.emit("CONNECTION_ERROR", { msg: error.message });
+                Console.err(error);
+            });
+        });
         return this;
     }
 

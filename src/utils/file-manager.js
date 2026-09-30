@@ -15,7 +15,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const fs = require("fs-extra");
 const path = require("path");
 const vscode = require("vscode");
-const { Console } = require("../ui/console.js");
 class FileManager {
     static init(context) {
         // this.storagePath = context.globalStoragePath;
@@ -70,7 +69,7 @@ class FileManager {
      */
     static record(fileName, content, model) {
         if (!this.storagePath) {
-            Console.warn("FileManager is not init!");
+            throw new Error("FileManager is not init!");
         }
         if (!fileName) {
             return;

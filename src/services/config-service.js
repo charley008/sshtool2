@@ -171,7 +171,7 @@ class ConfigService {
                                 if (uri && uri[0]) {
                                     try {
                                         const configvos = await this.importConfigFile(uri[0].fsPath || uri[0].path, content.password);
-                                        _cfg.ConfigAPI.import_configvos(configvos);
+                                        await _cfg.ConfigAPI.import_configvos(configvos);
                                         _core.API.refresh();
                                         const count = Object.keys(configvos || {}).length;
                                         handler.emit("IMPORT", { configvos, titles });

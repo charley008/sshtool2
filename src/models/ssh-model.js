@@ -17,16 +17,16 @@ class SSHVO {
     static getAll() {
         return new SSHDAO().selectAll();
     }
-    static delAll() {
+    static async delAll() {
         const sshs = SSHVO.getAll() || {};
         const ids = Object.keys(sshs);
         new ForwardDAO().deleteAll();
         new WorkspaceDAO().deleteAll();
         new RemoteDAO().deleteAll();
-        SSHCredentialService.deleteMany(ids).catch((err) => {
-            console.warn("[SSH Tools] Failed to delete all SSH credentials:", err && err.message ? err.message : err);
-        });
-        return new SSHDAO().deleteAll();
+        new SSHDAO().deleteAll();
+        await SSHCredentialService.deleteMany(ids);
+        await require("../storage/base-dt.js").BaseDT.flush();
+        return true;
     }
     static get(sshId) {
         const forwards = new ForwardDAO().selectBySSHId(sshId);
@@ -47,14 +47,18 @@ class SSHVO {
     static put(sshInfo) {
         return new SSHDAO().insert(SSHCredentialService.sanitize(sshInfo));
     }
-    static del(sshId) {
-        new ForwardDAO().deleteBySSHId(sshId);
-        new RemoteDAO().deleteBySSHId(sshId);
-        new WorkspaceDAO().deleteByEId(sshId);
-        SSHCredentialService.delete(sshId).catch((err) => {
-            console.warn("[SSH Tools] Failed to delete SSH credentials:", err && err.message ? err.message : err);
+    static async del(sshId) {
+        return require("../services/config-mutation.js").ConfigMutation.run(async () => {
+            const vo = this.get(sshId);
+            new SSHDAO().deleteById(sshId);
+            new ForwardDAO().deleteBySSHId(sshId);
+            new RemoteDAO().deleteBySSHId(sshId);
+            new WorkspaceDAO().deleteByEId(sshId);
+            await require("../services/runtime-service.js").RuntimeService.closeConnection("ssh", sshId, vo);
+            await SSHCredentialService.delete(sshId);
+            await require("../storage/base-dt.js").BaseDT.flush();
+            return true;
         });
-        return new SSHDAO().deleteById(sshId);
     }
     static title(sshInfo) {
         return `${sshInfo.ssh.username}@${sshInfo.ssh.host}:${sshInfo.ssh.port}`;

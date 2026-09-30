@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - "v*"
+      - "[0-9]*"
   workflow_dispatch:
 
 permissions:
@@ -30,6 +31,12 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Test
+        run: npm test
+
+      - name: Test built extension
+        run: node scripts/test-extension.js --bundle
+
       - name: Package VSIX
         run: npm run package
 
@@ -37,7 +44,8 @@ jobs:
         id: vsix
         shell: bash
         run: |
-          file="$(ls -1 packages/*.vsix | head -n 1)"
+          file="packages/sshtools2-${GITHUB_REF_NAME}.vsix"
+          if [ ! -f "$file" ]; then file="packages/sshtools2-$(node -p 'require("./package.json").version').vsix"; fi
           echo "file=$file" >> "$GITHUB_OUTPUT"
           echo "Built $file"
 
@@ -49,7 +57,7 @@ jobs:
           if-no-files-found: error
 
       - name: Publish GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/')
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG_NAME: ${{ github.ref_name }}

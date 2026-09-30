@@ -26,7 +26,7 @@ class Util {
     static confirm(placeHolder, callback) {
         vscode.window.showQuickPick([(0, Localize)("sshtool.yes"), (0, Localize)("sshtool.no")], { placeHolder }).then((res) => {
             if (res == (0, Localize)("sshtool.yes")) {
-                callback();
+                Promise.resolve().then(callback).catch(error => require("../ui/console.js").Console.err(error));
             }
         });
     }

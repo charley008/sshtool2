@@ -106,7 +106,7 @@ class GroupVO {
         }
         return null;
     }
-    static del(gname) {
+    static async del(gname) {
         const groupvos = this.getAll();
         for (let i in groupvos) {
             const groupvo = groupvos[i];
@@ -114,10 +114,10 @@ class GroupVO {
                 for (let j in groupvo.infos) {
                     const info = groupvo.infos[j];
                     if (info.type == constant_1.Type.SSH) {
-                        SSHVO.del(info.ssh.id);
+                        await SSHVO.del(info.ssh.id);
                     }
                     if (info.type == constant_1.Type.FTP) {
-                        FTPVO.del(info.ftp.id);
+                        await FTPVO.del(info.ftp.id);
                     }
                 }
             }

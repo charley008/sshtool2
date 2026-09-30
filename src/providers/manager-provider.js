@@ -30,14 +30,14 @@ class ManagerProvider extends NodeProvider {
             Storage.touch_temp_file_remote(document.uri.fsPath);
         };
         vscode.workspace.textDocuments.forEach(touchTempRemoteDocument);
-        vscode.workspace.onDidOpenTextDocument(touchTempRemoteDocument);
-        vscode.workspace.onDidSaveTextDocument(e => {
+        Storage.context.subscriptions.push(vscode.workspace.onDidOpenTextDocument(touchTempRemoteDocument));
+        Storage.context.subscriptions.push(vscode.workspace.onDidSaveTextDocument(e => {
             const tempPath = Storage.normalize_temp_file_path(e.fileName);
             const tempFile = Storage.get_temp_file_remote(tempPath);
             if (tempFile) {
-                this.saveFile(tempPath, tempFile);
+                this.saveFile(tempPath, tempFile).catch(error => require("../ui/console.js").Console.err(error));
             }
-        });
+        }));
     }
     getChildren(element) {
         return __awaiter(this, void 0, void 0, function* () {

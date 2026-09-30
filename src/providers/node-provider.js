@@ -42,10 +42,10 @@ class NodeProvider {
     saveFile(tempPath, tempFile) {
         return __awaiter(this, void 0, void 0, function* () {
             if (tempFile.ssh) {
-                SSHAPI.file_save(tempPath, tempFile);
+                yield SSHAPI.file_save(tempPath, tempFile);
             }
             else if (tempFile.ftp) {
-                FTPAPI.file_save(tempPath, tempFile);
+                yield FTPAPI.file_save(tempPath, tempFile);
             }
         });
     }
@@ -84,8 +84,8 @@ class NodeProvider {
     }
     delete(node) {
         if (constant_1.NodeType.GROUP == node.contextValue) {
-            Util.confirm(`${(0, Localize)("sshtool.msg.conn.group.delete.alert", node.id)}?`, () => {
-                GroupAPI.group_delete(node.id);
+            Util.confirm(`${(0, Localize)("sshtool.msg.conn.group.delete.alert", node.id)}?`, async () => {
+                await GroupAPI.group_delete(node.id);
                 Console.info((0, Localize)("sshtool.msg.group.delete.ok", node.id));
             });
         }
@@ -93,13 +93,13 @@ class NodeProvider {
             if (node.info.type == constant_1.Type.SSH) {
                 const sshInfo = node.info.ssh;
                 Util.confirm(`${(0, Localize)("sshtool.msg.conn.delete.alert")} ${SSHVO.title(sshInfo)}?`, () => {
-                    SSHAPI.ssh_delete(node.info);
+                    return SSHAPI.ssh_delete(node.info);
                 });
             }
             if (node.info.type == constant_1.Type.FTP) {
                 const sshInfo = node.info.ftp;
                 Util.confirm(`${(0, Localize)("sshtool.msg.conn.delete.alert")} ${FTPVO.title(sshInfo)}?`, () => {
-                    FTPAPI.ftp_delete(node.info);
+                    return FTPAPI.ftp_delete(node.info);
                 });
             }
         }

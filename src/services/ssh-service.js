@@ -66,13 +66,21 @@ class SSHService {
         const parsed = this.parsPrivates2PrivateKey(sshi);
         return SSHCredentialService.hydrate(parsed);
     }
-    async persistSshInfo(sshi, type) {
-        const parsed = this.parsPrivates2PrivateKey(sshi);
-        await SSHCredentialService.saveFrom(parsed);
-        const sanitized = SSHCredentialService.sanitize(parsed);
-        return type == "edit" ? SSHVO.post(sanitized) : SSHVO.put(sanitized);
+    async persistSshInfo(sshi, type, epoch = require("./config-mutation.js").ConfigMutation.epoch) {
+        return require("./config-mutation.js").ConfigMutation.run(async () => {
+            if (epoch !== require("./config-mutation.js").ConfigMutation.epoch) throw new Error("Configuration changed; reopen the connection editor.");
+            const parsed = this.parsPrivates2PrivateKey(sshi);
+            if (!parsed.id) parsed.id = require("crypto").randomUUID();
+            if (type == "edit" && !SSHVO.verify(parsed.id)) return false;
+            await SSHCredentialService.saveFrom(parsed);
+            const sanitized = SSHCredentialService.sanitize(parsed);
+            const result = type == "edit" ? SSHVO.post(sanitized) : SSHVO.put(sanitized);
+            await require("../storage/base-dt.js").BaseDT.flush();
+            return result;
+        });
     }
     createSSHView(sshInfo, flag) {
+        const epoch = require("./config-mutation.js").ConfigMutation.epoch;
         const tis = {
             tab_host_info_title: (0, Localize)("sshtool.view.connect.tab.host.info.title"),
             connect_err_title: (0, Localize)("sshtool.view.connect.connect.err.title"),
@@ -144,13 +152,13 @@ class SSHService {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    SSHConn.get(sshi, false).then(({ client }) => {
+                    SSHConn.get(sshi, false, null, true).then(({ client }) => {
                         sshi.status = SSHType.ONLINE;
                         if (client) {
                             client.end();
                             client.destroy();
                         }
-                        this.persistSshInfo(sshi, content.type).then((saved) => {
+                        this.persistSshInfo(sshi, content.type, epoch).then((saved) => {
                             if (!saved) {
                                 Console.info((0, Localize)("sshtool.msg.conn.add.no", SSHVO.title(sshi)));
                                 return;
@@ -175,9 +183,10 @@ class SSHService {
                     } catch(e) {
                         Console.debug(`Private key parse failed: ${e && e.message ? e.message : e}`);
                     }
-                    SSHConn.get(sshi, false).then(() => {
+                    SSHConn.get(sshi, false, null, true).then(({ client }) => {
                         handler.emit('CONNECTION_TEST_OK', { titles: tis, msg: '连接测试成功' });
-                        SSHConn.closeSSH(sshi);
+                        client.end();
+                        client.destroy();
                     }).catch(err => {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: err.message });
                     });
@@ -189,7 +198,7 @@ class SSHService {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    const result = await this.persistSshInfo(sshi, content.type);
+                    const result = await this.persistSshInfo(sshi, content.type, epoch);
                     if (result) {
                         API.refresh();
                         handler.panel.dispose();

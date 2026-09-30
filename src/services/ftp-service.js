@@ -13,6 +13,7 @@ const { FTPCredentialService } = require("./ftp-credential-service.js");
 const { ViewManager } = require("../ui/view-option.js");
 class FTPService {
     createFTPView(ftpInfo, flag) {
+        const epoch = require("./config-mutation.js").ConfigMutation.epoch;
         const tis = {
             tab_host_info_title: (0, Localize)("sshtool.view.ftp.tab.host.info.title"),
             connect_err_title: (0, Localize)("sshtool.view.ftp.connect.err.title"),
@@ -73,12 +74,13 @@ class FTPService {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    FTPConn.get(ftpi).then(() => {
+                    FTPConn.get(ftpi, true).then(({ key }) => {
+                        FTPConn.closeFTP({ id: key });
                         handler.emit('CONNECTION_TEST_OK', { msg: `连接成功 ${ftpi.ftp.host}:${ftpi.ftp.port}` });
                     }).catch(err => {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: err.message });
                     });
-                }).on("CONNECT_FTP_INFO_SAVE", (content) => {
+                }).on("CONNECT_FTP_INFO_SAVE", async (content) => {
                     const ftpi = content.ftpInfo;
                     // const ftpi: FTPInfo = API.config_filter(content.ftpInfo, true);
                     let msg = null;
@@ -95,7 +97,7 @@ class FTPService {
                         handler.emit('CONNECTION_ERROR', { titles: tis, msg: msg });
                         return;
                     }
-                    if (content.type == "edit" ? FTPVO.post(ftpi) : FTPVO.put(ftpi)) {
+                    if (await FTPVO.persist(ftpi, content.type == "edit", epoch)) {
                         _core.API.refresh();
                         Console.info((0, Localize)("sshtool.msg.ftp.save.ok", FTPVO.title(ftpi)));
                         handler.panel.dispose();

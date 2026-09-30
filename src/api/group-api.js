@@ -68,8 +68,8 @@ class GroupAPI {
         GroupVO.modifyByGName(old_name, new_name);
         _core.API.refresh();
     }
-    static group_delete(gname) {
-        GroupVO.del(gname);
+    static async group_delete(gname) {
+        await GroupVO.del(gname);
         _core.API.refresh();
     }
 }

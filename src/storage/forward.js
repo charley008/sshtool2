@@ -35,14 +35,16 @@ class ForwardDT extends BaseDT {
     }
 
     static update_forwards(forwards) {
-        this.context.globalState.update(CacheKey.SSHTOOL_CACHEKEY_DATA_FORWARD, forwards);
+        BaseDT.write(this.context, CacheKey.SSHTOOL_CACHEKEY_DATA_FORWARD, forwards);
     }
 
     static update_forward(forward) {
         this.Init();
+        if (!forward || !this.forwards[forward.id]) return false;
         const id = forward.id;
         this.forwards[id] = forward;
         this.update_forwards(this.forwards);
+        return true;
     }
 
     static insert_forward(forward) {
@@ -50,6 +52,7 @@ class ForwardDT extends BaseDT {
         const id = forward.id;
         this.forwards[id] = forward;
         this.update_forwards(this.forwards);
+        return true;
     }
 
     static delete_forward(id) {
@@ -60,7 +63,7 @@ class ForwardDT extends BaseDT {
     }
 
     static delete_forwards() {
-        this.forwards = null;
+        this.forwards = {};
         this.update_forwards({});
     }
 }

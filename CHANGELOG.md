@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.7 - 2026-09-30
+
+- Fixed stale configuration updates, SSH/FTP connection lifecycle and transfer cancellation.
+- Improved configuration cleanup, credential persistence, terminal safety and SOCKS shutdown.
+- Reduced background writes and added runtime regression tests to release CI.
+
 ## 2.1.6 - 2026-06-09
 
 - Fixed a bug where background status refresh could overwrite edited connection data such as the selected group.

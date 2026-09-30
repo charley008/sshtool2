@@ -63,8 +63,7 @@ class InfoVO {
         return infovos;
     }
     static delAll() {
-        SSHVO.delAll();
-        return FTPVO.delAll();
+        return require("../api/config-api.js").ConfigAPI.clear();
     }
     static get(id) {
         const infovo = new InfoVO();

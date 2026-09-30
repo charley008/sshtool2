@@ -34,12 +34,7 @@ class ForwardApi {
     stop_local_ssh_exec() {
         return __awaiter(this, void 0, void 0, function* () {
             const forward = this.vo.forward;
-            if (forward.forward.type == constant_1.ForwardType.LocalForwarding) {
-                yield new ForwardCommand(this.vo).shutdown();
-            }
-            else if (forward.forward.type == constant_1.ForwardType.RemoteForwarding) {
-                yield new ForwardCommand(this.vo).shutdown();
-            }
+            yield new ForwardCommand(this.vo).shutdown();
         });
     }
     stop() {

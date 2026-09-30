@@ -13,14 +13,14 @@ class FTPVO {
     static getAll() {
         return new FTPDAO().selectAll();
     }
-    static delAll() {
+    static async delAll() {
         const ftps = FTPVO.getAll() || {};
         const ids = Object.keys(ftps);
         new WorkspaceDAO().deleteAll();
-        FTPCredentialService.deleteMany(ids).catch((err) => {
-            console.warn("[SSH Tools] Failed to delete all FTP credentials:", err && err.message ? err.message : err);
-        });
-        return new FTPDAO().deleteAll();
+        new FTPDAO().deleteAll();
+        await FTPCredentialService.deleteMany(ids);
+        await require("../storage/base-dt.js").BaseDT.flush();
+        return true;
     }
     static get(ftpId) {
         const workspaces = new WorkspaceDAO().selectByEId(ftpId);
@@ -34,23 +34,33 @@ class FTPVO {
         return false;
     }
     static post(ftpInfo) {
-        FTPCredentialService.saveFrom(ftpInfo).catch((err) => {
-            console.warn("[SSH Tools] Failed to save FTP credentials:", err && err.message ? err.message : err);
-        });
         return new FTPDAO().update(FTPCredentialService.sanitize(ftpInfo));
     }
     static put(ftpInfo) {
-        FTPCredentialService.saveFrom(ftpInfo).catch((err) => {
-            console.warn("[SSH Tools] Failed to save FTP credentials:", err && err.message ? err.message : err);
-        });
         return new FTPDAO().insert(FTPCredentialService.sanitize(ftpInfo));
     }
-    static del(ftpId) {
-        new WorkspaceDAO().deleteByEId(ftpId);
-        FTPCredentialService.delete(ftpId).catch((err) => {
-            console.warn("[SSH Tools] Failed to delete FTP credentials:", err && err.message ? err.message : err);
+    static async persist(ftpInfo, edit = false, epoch = require("../services/config-mutation.js").ConfigMutation.epoch, afterSave) {
+        return require("../services/config-mutation.js").ConfigMutation.run(async () => {
+            if (epoch !== require("../services/config-mutation.js").ConfigMutation.epoch) throw new Error("Configuration changed; reopen the connection editor.");
+            if (!ftpInfo.id) ftpInfo.id = require("crypto").randomUUID();
+            const dao = new FTPDAO();
+            if (edit ? !dao.verify(ftpInfo.id) : !require("../storage/ftp.js").FTPDT.verify(ftpInfo)) return false;
+            await FTPCredentialService.saveFrom(ftpInfo);
+            const result = edit ? this.post(ftpInfo) : this.put(ftpInfo);
+            if (result && afterSave) await afterSave();
+            await require("../storage/base-dt.js").BaseDT.flush();
+            return result;
         });
-        return new FTPDAO().deleteById(ftpId);
+    }
+    static async del(ftpId) {
+        return require("../services/config-mutation.js").ConfigMutation.run(async () => {
+            new FTPDAO().deleteById(ftpId);
+            new WorkspaceDAO().deleteByEId(ftpId);
+            await require("../services/runtime-service.js").RuntimeService.closeConnection("ftp", ftpId);
+            await FTPCredentialService.delete(ftpId);
+            await require("../storage/base-dt.js").BaseDT.flush();
+            return true;
+        });
     }
     static title(ftpInfo) {
         return `${ftpInfo.ftp.user}@${ftpInfo.ftp.host}:${ftpInfo.ftp.port}`;
