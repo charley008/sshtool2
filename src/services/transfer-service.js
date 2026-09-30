@@ -19,7 +19,7 @@ class TransferService {
             if (signal.aborted) abort();
         });
     }
-    static async run(kind, info, local, remote, upload, title, size = 0) {
+    static async run(kind, info, local, remote, upload, title, size = 0, options = {}) {
         try {
             return await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title, cancellable: true }, async (progress, token) => {
                 const controller = new AbortController();
@@ -50,8 +50,16 @@ class TransferService {
                             report(transferred);
                             callback(null, chunk);
                         } });
-                        await pipeline(upload ? fs.createReadStream(local) : sftp.createReadStream(remote), meter,
-                            upload ? sftp.createWriteStream(remote) : fs.createWriteStream(partial), { signal: controller.signal });
+                        const source = upload ? fs.createReadStream(local) : sftp.createReadStream(remote);
+                        const destination = upload ? sftp.createWriteStream(remote) : fs.createWriteStream(partial);
+                        // Only a denial from the remote write stream can offer sudo; local
+                        // permissions and connection errors must not trigger elevation.
+                        if (upload) source.on("error", error => { error.localTransferError = true; });
+                        if (upload) destination.on("error", error => {
+                            if (!error.localTransferError && !controller.signal.aborted && (error.code === 3 || error.code === "EACCES" || error.code === "EPERM" ||
+                                /permission denied|operation not permitted/i.test(error.message || ""))) error.remoteWriteDenied = true;
+                        });
+                        await pipeline(source, meter, destination, { signal: controller.signal });
                     } else {
                         const { client } = await this.wait(FTPConn.get(info), controller.signal);
                         let started = false;
@@ -85,6 +93,7 @@ class TransferService {
                 }
             });
         } catch (error) {
+            if (options.throwOnError) throw error;
             Console.err(error);
             return false;
         }

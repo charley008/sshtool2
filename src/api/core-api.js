@@ -49,11 +49,11 @@ class API {
     static refresh() {
         Console.debug("api.ts func refresh begin");
         API.init_status_bar();
-        vscode.commands.executeCommand(constant_1.Command.ONLINE_REFRESH);
-        vscode.commands.executeCommand(constant_1.Command.OFFLINE_REFRESH);
-        vscode.commands.executeCommand(constant_1.Command.MANAGER_REFRESH);
-        vscode.commands.executeCommand(constant_1.Command.WORKSPACE_ONLINE_REFRESH);
-        vscode.commands.executeCommand(constant_1.Command.WORKSPACE_OFFLINE_REFRESH);
+        vscode.commands.executeCommand(constant_1.Command.ONLINE_REFRESH, { background: true });
+        vscode.commands.executeCommand(constant_1.Command.OFFLINE_REFRESH, { background: true });
+        vscode.commands.executeCommand(constant_1.Command.MANAGER_REFRESH, { background: true });
+        vscode.commands.executeCommand(constant_1.Command.WORKSPACE_ONLINE_REFRESH, { background: true });
+        vscode.commands.executeCommand(constant_1.Command.WORKSPACE_OFFLINE_REFRESH, { background: true });
         Console.debug("api.ts func refresh end");
     }
     // status keys初始化 (ConsoleOututSwitch)

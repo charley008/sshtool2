@@ -32,7 +32,8 @@ const vscode = {
         onDidOpenTextDocument: disposable, onDidSaveTextDocument: disposable },
     window: { createTreeView: disposable, createOutputChannel: () => ({ ...disposable(), appendLine() {}, show() {}, hide() {} }),
         createStatusBarItem: () => ({ ...disposable(), show() {} }), showErrorMessage: message => { throw new Error(message); },
-        showWarningMessage: async () => undefined, showInformationMessage: async () => undefined, showQuickPick: async items => items[0] },
+        showWarningMessage: async () => undefined, showInformationMessage: async () => undefined,
+        setStatusBarMessage: disposable, showQuickPick: async items => items[0] },
     Uri: { file: fsPath => ({ fsPath, path: fsPath, scheme: "file" }), parse: value => ({ toString: () => value }) },
 };
 Module._load = function(name) { if (name === "vscode") return vscode; return originalLoad.apply(this, arguments); };
@@ -47,6 +48,17 @@ Module._load = function(name) { if (name === "vscode") return vscode; return ori
     try {
         await extension.activate(context);
         assert.ok(commands.size >= 30, "Extension command registration failed");
+        if (!bundled) {
+            const { SSHConn } = require("../src/connections/ssh-connection.js");
+            SSHConn.listErrors.set("test:/root", "Permission denied");
+            await commands.get("sshtools2.online.refresh")({ background: true });
+            assert.equal(SSHConn.listErrors.size, 1, "background refresh preserves denial deduplication");
+            await commands.get("sshtools2.online.refresh")();
+            assert.equal(SSHConn.listErrors.size, 0, "manual view refresh allows a fresh error notification");
+            SSHConn.listErrors.set("test:/root", "Permission denied");
+            await commands.get("sshtools2.refresh")();
+            assert.equal(SSHConn.listErrors.size, 0, "manual global refresh allows a fresh error notification");
+        }
         await commands.get("sshtools2.clearall")();
         const deadline = Date.now() + 1000;
         while (values.has("sshtools2.cachekey.data.ftp") && Date.now() < deadline) await new Promise(resolve => setTimeout(resolve, 5));

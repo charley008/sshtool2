@@ -1,5 +1,14 @@
 # Changelog
 
+## 2.1.9 - 2026-09-30
+
+- Show sudo-save success in the status bar for three seconds instead of a persistent notification.
+- Finish sudo-save progress after verified writeback without waiting for temporary cleanup; read saved login passwords independently of SSH key selection.
+- Avoid repeated identical SFTP directory-permission notifications during automatic/save-triggered tree refreshes; explicit refresh and reconnect can notify again.
+- Offer sudo save only after an SSH remote editor save fails with a write-permission error; authorization and passwords apply only to that file's current save.
+- Confirm the remote is Linux and reuse the target connection's saved login password when sudo authentication is required, with a manual password fallback.
+- Save through sudo cp with a private temporary directory, original-file backup, content verification and recovery on confirmed write failures.
+
 ## 2.1.8 - 2026-09-30
 
 - Added recursive deletion of non-empty SFTP/FTP directories with explicit confirmation and symlink protection.

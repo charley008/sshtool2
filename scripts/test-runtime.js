@@ -138,6 +138,40 @@ test("SFTP folder deletion reports operation context instead of a bare Failure",
     assert.match(warnings[0], /Some contents may already/);
 });
 
+test("repeated directory permission errors notify once and rearm on refresh, success or reconnect", async () => {
+    const { SSHConn, warnings } = sshFixture(); let denied = true, calls = 0;
+    SSHConn.get = async () => ({ sftp: { readdir(remote, callback) {
+        calls++;
+        callback(denied ? Object.assign(new Error("Permission denied"), { code: 3 }) : null, denied ? undefined : []);
+    } } });
+    assert.equal(await SSHConn.list(info(), "/root/"), null);
+    assert.equal(await SSHConn.list(info(), "/root"), null);
+    SSHConn.clearListCache(info());
+    assert.equal(await SSHConn.list(info(), "/root/"), null);
+    assert.equal(warnings.length, 1); assert.equal(calls, 3, "failed listings must still be retried");
+    await SSHConn.list(info(), "/private"); await SSHConn.list(info("other"), "/root/");
+    assert.equal(warnings.length, 3, "different paths/connections notify independently");
+    SSHConn.resetListErrors(info()); await SSHConn.list(info(), "/root/");
+    assert.equal(warnings.length, 4);
+    denied = false; assert.equal((await SSHConn.list(info(), "/root/")).length, 0);
+    denied = true; SSHConn.clearListCache(info()); await SSHConn.list(info(), "/root/");
+    assert.equal(warnings.length, 5);
+    SSHConn.closeSSH(info()); await SSHConn.list(info(), "/root/"); assert.equal(warnings.length, 6);
+    SSHConn.resetListErrors(); assert.equal(SSHConn.listErrors.size, 0);
+});
+
+test("directory notification deduplication preserves changed failures and explicit write errors", async () => {
+    const { SSHConn, warnings } = sshFixture(); let message = "Permission denied";
+    SSHConn.get = async () => ({ sftp: {
+        readdir(remote, callback) { callback(Object.assign(new Error(message), { code: 3 })); },
+        unlink(remote, callback) { callback(Object.assign(new Error("Permission denied"), { code: 3 })); },
+    } });
+    await SSHConn.list(info(), "/root/"); message = "Permission denied by ACL";
+    await SSHConn.list(info(), "/root/"); assert.equal(warnings.length, 2);
+    await SSHConn.delete(info(), "/root/file"); await SSHConn.delete(info(), "/root/file");
+    assert.equal(warnings.length, 4, "deliberate write operations must always report failures");
+});
+
 function remoteTree() {
     const entries = new Map(Object.entries({
         "/data": "directory", "/data/.hidden": "file", "/data/nested": "directory",
@@ -339,16 +373,357 @@ test("clear waits for in-flight saves and rejects saves submitted while clearing
     assert.equal(ConfigMutation.clearing, false);
 });
 
-function transferFixture(sftp) {
+function transferFixture(sftp, localFs = fs) {
     const listeners = new Set(); let disposed = 0;
     const token = { isCancellationRequested: false, onCancellationRequested(fn) { listeners.add(fn); return { dispose() { listeners.delete(fn); disposed++; } }; } };
     const { TransferService } = load("src/services/transfer-service.js", {
+        "fs-extra": localFs,
         vscode: { ProgressLocation: { Notification: 1 }, window: { withProgress: (options, callback) => callback({ report() {} }, token) } },
         "../connections/ssh-connection.js": { SSHConn: { get: async () => ({ sftp }), clearListCache() {} } },
         "../connections/ftp-connection.js": { FTPConn: {} },
     });
     return { TransferService, token, cancel() { for (const fn of listeners) fn(); }, get disposed() { return disposed; } };
 }
+
+test("only remote write denials carry the sudo retry marker", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "sshtools-permission-"));
+    const local = path.join(root, "source");
+    try {
+        await fs.writeFile(local, "data");
+        for (const code of [3, 4, "EACCES", "ENOSPC"]) {
+            const fixture = transferFixture({ createWriteStream() {
+                const stream = new PassThrough();
+                setImmediate(() => stream.destroy(Object.assign(new Error(code === 3 ? "Permission denied" : "Failure"), { code })));
+                return stream;
+            } });
+            await assert.rejects(fixture.TransferService.run("ssh", info(), local, "/remote", true, "save", 4, { throwOnError: true }), error => {
+                assert.equal(error.remoteWriteDenied === true, code === 3 || code === "EACCES"); return true;
+            });
+        }
+        const missing = transferFixture({ createWriteStream: () => new PassThrough() });
+        await assert.rejects(missing.TransferService.run("ssh", info(), local + ".missing", "/remote", true, "save", 4, { throwOnError: true }),
+            error => error.code === "ENOENT" && !error.remoteWriteDenied);
+        const localDenied = transferFixture({ createWriteStream: () => new PassThrough() }, {
+            ...fs, createReadStream() {
+                const stream = new PassThrough();
+                setImmediate(() => stream.destroy(Object.assign(new Error("Permission denied"), { code: "EACCES" })));
+                return stream;
+            },
+        });
+        await assert.rejects(localDenied.TransferService.run("ssh", info(), local, "/remote", true, "save", 4, { throwOnError: true }),
+            error => error.code === "EACCES" && !error.remoteWriteDenied);
+    } finally { await fs.remove(root); }
+});
+
+function remoteSaveFixture(records, transfer, choice, linux = true, options = {}) {
+    const prompts = [], elevations = [], errors = [], messages = []; let activeProgress = 0;
+    const { RemoteFileService } = load("src/services/remote-file-service.js", {
+        vscode: { ProgressLocation: { Notification: 1 }, window: {
+            showWarningMessage: async (message, button) => { prompts.push(message); return choice ? button : undefined; },
+            withProgress: async (options, callback) => {
+                activeProgress++;
+                try { return await callback(); } finally { activeProgress--; }
+            },
+            setStatusBarMessage: (message, timeout) => {
+                assert.equal(activeProgress, 0, "success notification must follow progress completion");
+                assert.equal(timeout, 3000, "success status must disappear after three seconds");
+                messages.push(message);
+                return { dispose() {} };
+            },
+            showInformationMessage: () => { throw new Error("save success must not create a persistent notification"); },
+        } },
+        "../storage/storage.js": { Storage: {
+            normalize_temp_file_path: value => value, get_temp_file_remote: value => records[value],
+            touch_temp_file_remote: (value, patch) => Object.assign(records[value], patch),
+        } },
+        "../utils/settings.js": { Settings: {} }, "../utils/file-manager.js": { FileManager: {} },
+        "../ui/localize.js": { default: translate(".zh-cn") }, "../ui/console.js": { Console: { ...quiet, err: error => errors.push(error) } },
+        "./transfer-service.js": { TransferService: { run: transfer } },
+        "./sudo-save-service.js": { SudoSaveService: {
+            isLinux: async () => linux, save: async (...args) => { elevations.push(args); return true; },
+        } },
+        "../models/ssh-model.js": { SSHVO: { get: () => ({ ssh: info() }) } },
+        "../models/ftp-model.js": { FTPVO: { get: () => ({ ftp: info("ftp", "ftp") }) } },
+        "../api/core-api.js": { API: { refresh() {} } },
+    });
+    return { RemoteFileService, prompts, elevations, errors, messages, get activeProgress() { return activeProgress; } };
+}
+
+test("sudo authorization is per file and per save; normal saves and FTP never inherit it", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "sshtools-save-"));
+    const first = path.join(root, "first"), second = path.join(root, "second");
+    try {
+        await fs.writeFile(first, "first"); await fs.writeFile(second, "second");
+        const records = { [first]: { ssh: info(), remote: "/first", hash: "old" }, [second]: { ssh: info(), remote: "/second", hash: "old" } };
+        let attempts = 0;
+        const fixture = remoteSaveFixture(records, async () => { attempts++; throw Object.assign(new Error("Permission denied"), { remoteWriteDenied: true }); }, true);
+        assert.equal(await fixture.RemoteFileService.save("ssh", first), true);
+        assert.equal(await fixture.RemoteFileService.save("ssh", second), true);
+        await fs.writeFile(first, "first changed");
+        assert.equal(await fixture.RemoteFileService.save("ssh", first), true);
+        assert.equal(attempts, 3); assert.equal(fixture.prompts.length, 3);
+        assert.deepEqual(fixture.elevations.map(args => args[2]), ["/first", "/second", "/first"]);
+        assert.equal(records[first].sudo, undefined); assert.equal(records[second].sudo, undefined);
+        records[first].hash = "old";
+        const ordinary = remoteSaveFixture(records, async () => true, true);
+        assert.equal(await ordinary.RemoteFileService.save("ssh", first), true); assert.equal(ordinary.prompts.length, 0);
+        records[first] = { ftp: info("ftp", "ftp"), remote: "/first", hash: "old" };
+        const ftp = remoteSaveFixture(records, async () => false, true);
+        assert.equal(await ftp.RemoteFileService.save("ftp", first), false); assert.equal(ftp.prompts.length, 0);
+        assert.deepEqual((await fs.readdir(root)).sort(), ["first", "second"]);
+    } finally { await fs.remove(root); }
+});
+
+test("declining sudo or unrelated save errors preserve the local edits and saved hash", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "sshtools-save-")); const local = path.join(root, "file");
+    try {
+        await fs.writeFile(local, "changes");
+        for (const denied of [true, false]) {
+            const records = { [local]: { ssh: info(), remote: "/file", hash: "old" } };
+            const fixture = remoteSaveFixture(records, async () => { throw Object.assign(new Error(denied ? "Permission denied" : "Connection lost"), { remoteWriteDenied: denied }); }, false);
+            assert.equal(await fixture.RemoteFileService.save("ssh", local), false);
+            assert.equal(fixture.elevations.length, 0); assert.equal(fixture.prompts.length, denied ? 1 : 0);
+            assert.equal(records[local].hash, "old"); assert.equal(await fs.readFile(local, "utf8"), "changes");
+        }
+    } finally { await fs.remove(root); }
+});
+
+function sudoFixture(options = {}) {
+    const commands = [], inputs = [], removed = [], errors = [], credentialReads = [], passwordPrompts = [], debug = []; let dialogs = 0, writes = 0;
+    const sftp = {
+        realpath: (remote, callback) => callback(null, remote),
+        lstat: (remote, callback) => callback(null, { isFile: () => true, mode: 0o100640 }),
+        fastPut: (local, remote, attrs, callback) => { assert.equal(attrs.mode, 0o600); callback(null); },
+        unlink: (remote, callback) => { removed.push(remote); callback(null); },
+        rmdir: (remote, callback) => { removed.push(remote); callback(null); },
+    };
+    const client = { exec(command, callback) {
+        commands.push(command);
+        const channel = new EventEmitter(); channel.stderr = new EventEmitter();
+        channel.destroy = () => channel.emit("close");
+        channel.end = input => {
+            inputs.push(input);
+            setImmediate(() => {
+                if ((options.hang && command.includes("cp --")) || (options.hangBackup && command.includes("cp -p --"))) return;
+                if (options.hangCleanup && command.startsWith("rm -f --")) return;
+                let code = 0, out = "", err = "";
+                if (command === "uname -s") { code = options.probeError ? 1 : 0; out = (options.os || "Linux") + "\n"; }
+                else if (command.includes("mktemp")) out = "/tmp/sshtools2-save.ABC123\n";
+                else if (command.startsWith("rm -f --")) removed.push("/tmp/sshtools2-save.ABC123/content", "/tmp/sshtools2-save.ABC123/original", "/tmp/sshtools2-save.ABC123");
+                else if (options.password && command.includes("sudo -k -n")) { code = 1; err = "sudo: a password is required"; }
+                else if (options.rejectSaved && command.includes("sudo -k -S") && input === "stored-password\n") {
+                    code = 1; err = "Sorry, try again. " + input;
+                }
+                else if (command.includes("cp --")) {
+                    writes++;
+                    if (options.failWrite) { code = 1; err = "write failed"; }
+                } else if (options.failRestore && /cp -p --.*\/original' '\/etc\/file'/.test(command)) { code = 1; err = "restore failed"; }
+                else if (options.wrongPassword && command.includes("sudo -k -S")) { code = 1; err = "Sorry, try again. " + input; }
+                if (out) channel.emit("data", Buffer.from(out));
+                if (err) channel.stderr.emit("data", Buffer.from(err));
+                channel.emit("close", code);
+            });
+        };
+        callback(null, channel);
+    } };
+    const { SudoSaveService } = load("src/services/sudo-save-service.js", {
+        vscode: { window: { showInputBox: async opts => { dialogs++; passwordPrompts.push(opts.prompt); assert.equal(opts.password, true); return options.cancel ? undefined : "test-only-password"; },
+            showInformationMessage: options.holdNotification ? () => new Promise(() => {}) : async () => {},
+        } },
+        "../connections/ssh-connection.js": { SSHConn: { get: async () => ({ client, sftp }), clearListCache() {} } },
+        "./ssh-credential-service.js": { SSHCredentialService: options.credentialService || { getLoginPassword: async record => {
+            credentialReads.push(record.id);
+            return record.ssh.password || (options.passwords && options.passwords[record.id]) || options.savedPassword || "";
+        } } },
+        "../ui/localize.js": { default: translate(".zh-cn") },
+        "../ui/console.js": { Console: { ...quiet, err: error => errors.push(error.message), debug: message => debug.push(message) } },
+    });
+    return { SudoSaveService, commands, inputs, removed, errors, credentialReads, passwordPrompts, debug, get dialogs() { return dialogs; }, get writes() { return writes; } };
+}
+
+test("sudo reuses only the target login password and falls back when it is rejected", async () => {
+    const saved = sudoFixture({ password: true, passwords: { first: "first-secret", second: "second-secret" } });
+    assert.equal(await saved.SudoSaveService.save(info("first"), "local", "/etc/first"), true);
+    assert.equal(await saved.SudoSaveService.save(info("second"), "local", "/etc/second"), true);
+    assert.equal(saved.dialogs, 0); assert.deepEqual(saved.credentialReads, ["first", "second"]);
+    assert.ok(saved.inputs.includes("first-secret\n")); assert.ok(saved.inputs.includes("second-secret\n"));
+    assert.ok(saved.commands.every(command => !/first-secret|second-secret/.test(command)));
+    const rejected = sudoFixture({ password: true, savedPassword: "stored-password", rejectSaved: true });
+    assert.equal(await rejected.SudoSaveService.save(info(), "local", "/etc/file"), true);
+    assert.equal(rejected.dialogs, 1); assert.ok(rejected.inputs.includes("stored-password\n"));
+    assert.match(rejected.passwordPrompts[0], /拒绝了当前连接/);
+    assert.ok(rejected.inputs.includes("test-only-password\n")); assert.equal(rejected.errors.length, 0);
+    const keyed = sudoFixture({ password: true, privateKey: "private-key-test", passphrase: "key-passphrase-test" });
+    assert.equal(await keyed.SudoSaveService.save(info(), "local", "/etc/file"), true);
+    assert.equal(keyed.dialogs, 1); assert.ok(keyed.inputs.every(value => !/private-key-test|key-passphrase-test/.test(value || "")));
+    assert.match(keyed.passwordPrompts[0], /未读取到当前连接/);
+    const passwordless = sudoFixture({ savedPassword: "stored-password" });
+    assert.equal(await passwordless.SudoSaveService.save(info(), "local", "/etc/file"), true);
+    assert.equal(passwordless.credentialReads.length, 0);
+});
+
+test("only confirmed Linux targets offer sudo; other platforms and probe failures do not elevate", async () => {
+    for (const os of ["Darwin", "FreeBSD", "Windows_NT"]) {
+        const fixture = sudoFixture({ os });
+        assert.equal(await fixture.SudoSaveService.save(info(), "local", "/etc/file"), false);
+        assert.deepEqual(fixture.commands, ["uname -s"]); assert.equal(fixture.credentialReads.length, 0);
+    }
+    const probeFailed = sudoFixture({ probeError: true });
+    assert.equal(await probeFailed.SudoSaveService.isLinux(info()), false);
+    const configuredWindows = sudoFixture(); const windows = info(); windows.ssh.ostype = "Windows_NT";
+    assert.equal(await configuredWindows.SudoSaveService.isLinux(windows), false); assert.equal(configuredWindows.commands.length, 0);
+    const ubuntu = sudoFixture(); const linux = info(); linux.ssh.ostype = "ubuntu";
+    assert.equal(await ubuntu.SudoSaveService.isLinux(linux), true);
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "sshtools-linux-")); const local = path.join(root, "file");
+    try {
+        await fs.writeFile(local, "changes");
+        const fixture = remoteSaveFixture({ [local]: { ssh: info(), remote: "/file", hash: "old" } },
+            async () => { throw Object.assign(new Error("Permission denied"), { remoteWriteDenied: true }); }, true, false);
+        assert.equal(await fixture.RemoteFileService.save("ssh", local), false);
+        assert.equal(fixture.prompts.length, 0); assert.equal(fixture.elevations.length, 0);
+    } finally { await fs.remove(root); }
+});
+
+test("sudo cp saves verify content, clean private files and never reuse passwords across files", async () => {
+    const fixture = sudoFixture({ password: true });
+    const target = "/etc/file'$(touch bad)";
+    assert.equal(await fixture.SudoSaveService.save(info(), "local", target), true);
+    assert.equal(await fixture.SudoSaveService.save(info(), "local", "/etc/second"), true);
+    assert.equal(fixture.dialogs, 2); assert.equal(fixture.writes, 2);
+    assert.equal(fixture.commands.filter(command => command.includes("sudo -k -n")).length, 2);
+    assert.ok(fixture.commands.some(command => command.includes("cp --") && command.includes("'\\''")));
+    assert.ok(fixture.commands.some(command => command.includes("cmp --")));
+    assert.ok(fixture.commands.every(command => !command.includes("test-only-password")));
+    assert.ok(fixture.commands.filter(command => command.includes("sudo")).every(command => command.includes("sudo -k")));
+    await tick();
+    assert.equal(fixture.removed.length, 6); assert.equal(fixture.errors.length, 0);
+});
+
+test("passwordless sudo and password cancellation do not write credentials or unwanted targets", { timeout: 1000 }, async () => {
+    const passwordless = sudoFixture({ holdNotification: true });
+    assert.equal(await passwordless.SudoSaveService.save(info(), "local", "/etc/file"), true);
+    assert.equal(passwordless.dialogs, 0); assert.ok(passwordless.inputs.every(input => input === undefined));
+    const cancelled = sudoFixture({ password: true, cancel: true });
+    assert.equal(await cancelled.SudoSaveService.save(info(), "local", "/etc/file"), false);
+    await tick();
+    assert.equal(cancelled.writes, 0); assert.equal(cancelled.removed.length, 3);
+    const wrong = sudoFixture({ password: true, wrongPassword: true });
+    assert.equal(await wrong.SudoSaveService.save(info(), "local", "/etc/file"), false);
+    assert.equal(wrong.writes, 0); assert.ok(wrong.errors.every(message => !message.includes("test-only-password")));
+});
+
+test("confirmed sudo write failures restore backups; unknown completion retains recovery files", async () => {
+    const failed = sudoFixture({ failWrite: true });
+    assert.equal(await failed.SudoSaveService.save(info(), "local", "/etc/file"), false);
+    await tick();
+    assert.ok(failed.commands.some(command => /cp -p --.*\/original' '\/etc\/file'/.test(command)));
+    assert.match(failed.errors[0], /已恢复/); assert.equal(failed.removed.length, 3);
+    const unknown = sudoFixture({ hang: true }); unknown.SudoSaveService.timeout = 25;
+    assert.equal(await unknown.SudoSaveService.save(info(), "local", "/etc/file"), false);
+    assert.equal(unknown.removed.length, 0); assert.match(unknown.errors[0], /\/tmp\/sshtools2-save.ABC123\/original/);
+    const unsafe = sudoFixture();
+    assert.equal(await unsafe.SudoSaveService.save(info(), "local", "/etc/../file"), false);
+    assert.equal(unsafe.commands.length, 0);
+    const restoreFailed = sudoFixture({ failWrite: true, failRestore: true });
+    assert.equal(await restoreFailed.SudoSaveService.save(info(), "local", "/etc/file"), false);
+    assert.equal(restoreFailed.removed.length, 0); assert.match(restoreFailed.errors[0], /原文件备份保留/);
+    const backupUnknown = sudoFixture({ hangBackup: true }); backupUnknown.SudoSaveService.timeout = 25;
+    assert.equal(await backupUnknown.SudoSaveService.save(info(), "local", "/etc/file"), false);
+    assert.equal(backupUnknown.removed.length, 0); assert.equal(backupUnknown.writes, 0);
+    assert.match(backupUnknown.errors[0], /临时目录保留/);
+});
+
+test("saved passwords are read directly from SecretStorage even with key fields in the target configuration", async () => {
+    const { SSHCredentialService } = require("../src/services/ssh-credential-service.js");
+    const { CredentialService } = require("../src/services/credential-service.js");
+    const previous = CredentialService.context, reads = [];
+    CredentialService.init({ secrets: { get: async key => {
+        reads.push(key);
+        return key === "sshtools:ssh:target:password" ? "saved-target-password" : undefined;
+    } } });
+    try {
+        const target = info("target"); target.ssh.privateKey = "key-field-test";
+        const fixture = sudoFixture({ password: true, credentialService: SSHCredentialService });
+        assert.equal(await fixture.SudoSaveService.save(target, "local", "/etc/one"), true);
+        assert.equal(await fixture.SudoSaveService.save(target, "local", "/etc/two"), true);
+        assert.equal(fixture.dialogs, 0);
+        assert.deepEqual(reads, ["sshtools:ssh:target:password", "sshtools:ssh:target:password"]);
+        assert.ok(fixture.inputs.includes("saved-target-password\n"));
+        assert.ok(fixture.commands.every(command => !command.includes("saved-target-password")));
+    } finally { CredentialService.init(previous); }
+});
+
+test("confirmed saves release progress and queues with transient status even when cleanup stalls", { timeout: 1000 }, async () => {
+    const stalled = sudoFixture({ hangCleanup: true }); stalled.SudoSaveService.cleanupTimeout = 30;
+    assert.equal(await stalled.SudoSaveService.save(info(), "local", "/etc/file"), true);
+    assert.equal(stalled.removed.length, 0);
+    await new Promise(resolve => setTimeout(resolve, 50));
+    assert.equal(stalled.debug.length, 1); assert.equal(stalled.errors.length, 0);
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "sshtools-progress-")), local = path.join(root, "file");
+    try {
+        await fs.writeFile(local, "first");
+        const records = { [local]: { ssh: info(), remote: "/file", hash: "old" } };
+        const fixture = remoteSaveFixture(records, async () => { throw Object.assign(new Error("Permission denied"), { remoteWriteDenied: true }); }, true, true, { holdNotification: true });
+        assert.equal(await fixture.RemoteFileService.save("ssh", local), true);
+        assert.equal(fixture.activeProgress, 0); assert.equal(fixture.messages.length, 1);
+        await fs.writeFile(local, "second");
+        assert.equal(await fixture.RemoteFileService.save("ssh", local), true);
+        assert.equal(fixture.activeProgress, 0); assert.equal(fixture.messages.length, 2);
+        assert.equal(fixture.RemoteFileService.saveQueues.size, 0);
+        assert.equal(records[local].hash, await fixture.RemoteFileService.hash(local));
+    } finally { await fs.remove(root); }
+});
+
+test("synchronous sudo channel and SFTP failures settle without leaving timeout timers", async () => {
+    const fixture = sudoFixture();
+    await assert.rejects(fixture.SudoSaveService.exec({ exec() { throw new Error("Not connected"); } }, "test"), /Not connected/);
+    await assert.rejects(fixture.SudoSaveService.call({ lstat() { throw new Error("Not connected"); } }, "lstat", "/file"), /Not connected/);
+});
+
+test("sudo executor sends secrets only through stdin and reads real SSH channel exit status", async () => {
+    const { Server, Client } = require("ssh2");
+    const { privateKey } = require("crypto").generateKeyPairSync("rsa", {
+        modulusLength: 2048, privateKeyEncoding: { type: "pkcs1", format: "pem" },
+        publicKeyEncoding: { type: "pkcs1", format: "pem" },
+    });
+    const requests = [];
+    const server = new Server({ hostKeys: [privateKey] }, connection => {
+        connection.on("error", () => {});
+        connection.on("authentication", context => context.accept());
+        connection.on("ready", () => connection.on("session", accept => {
+            accept().on("exec", (acceptExec, rejectExec, request) => {
+                const channel = acceptExec(); let input = "";
+                channel.on("data", data => { input += data.toString("utf8"); });
+                channel.on("end", () => {
+                    requests.push({ command: request.command, input });
+                    if (request.command === "success") {
+                        const output = Buffer.from("测试输出");
+                        channel.write(output.subarray(0, 1)); channel.write(output.subarray(1));
+                        channel.exit(0);
+                    } else { channel.stderr.write("Permission denied"); channel.exit(3); }
+                    channel.end();
+                });
+            });
+        }));
+    });
+    const client = new Client();
+    try {
+        await new Promise((resolve, reject) => { server.once("error", reject); server.listen(0, "127.0.0.1", resolve); });
+        await new Promise((resolve, reject) => {
+            client.once("ready", resolve); client.once("error", reject);
+            client.connect({ host: "127.0.0.1", port: server.address().port, username: "test-only", hostVerifier: () => true });
+        });
+        const fixture = sudoFixture();
+        const success = await fixture.SudoSaveService.exec(client, "success", "test-only-password");
+        assert.equal(success.code, 0); assert.equal(success.stdout, "测试输出");
+        const failure = await fixture.SudoSaveService.exec(client, "denied");
+        assert.equal(failure.code, 3); assert.equal(failure.stderr, "Permission denied");
+        assert.deepEqual(requests, [{ command: "success", input: "test-only-password\n" }, { command: "denied", input: "" }]);
+    } finally {
+        client.end(); client.destroy();
+        await new Promise(resolve => server.close(resolve));
+    }
+});
 test("downloads complete atomically and errors preserve the previous local file", async () => {
     const root = await fs.mkdtemp(path.join(os.tmpdir(), "sshtools-test-")); const local = path.join(root, "target");
     try {

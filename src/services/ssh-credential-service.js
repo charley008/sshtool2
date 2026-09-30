@@ -9,6 +9,15 @@ const {
 } = require("../utils/ssh-credential-fields.js");
 
 class SSHCredentialService {
+    static async getLoginPassword(sshInfo) {
+        if (!sshInfo) return undefined;
+        const inline = sshInfo.ssh && sshInfo.ssh.password;
+        if (typeof inline === "string" && inline) return inline;
+        // Sudo needs the target login password independently of SSH's key/password
+        // selection. Never substitute a key passphrase or read jump-host secrets.
+        return CredentialService.get("ssh", sshInfo.id, "password");
+    }
+
     static async load(id) {
         const credentials = {};
         if (!id || !CredentialService.isReady()) {

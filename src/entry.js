@@ -112,12 +112,17 @@ async function activate(context) {
     add('sshtools2.workspace.del', (node) => serviceManager.onlineWorkspaceProvider && serviceManager.onlineWorkspaceProvider.workspace_del(node));
     add('sshtools2.workspace.modify', (node) => serviceManager.onlineWorkspaceProvider && serviceManager.onlineWorkspaceProvider.workspace_modify(node));
     add('sshtools2.config', () => ConfigAPI && ConfigAPI.manager());
-    add(Command.REFRESH, () => API && API.refresh());
-    add(Command.ONLINE_REFRESH, () => serviceManager.onlineProvider && serviceManager.onlineProvider.refresh());
-    add(Command.OFFLINE_REFRESH, () => serviceManager.offlineProvider && serviceManager.offlineProvider.refresh());
-    add(Command.MANAGER_REFRESH, () => serviceManager.managerProvider && serviceManager.managerProvider.refresh());
-    add(Command.WORKSPACE_ONLINE_REFRESH, () => serviceManager.onlineWorkspaceProvider && serviceManager.onlineWorkspaceProvider.refresh());
-    add(Command.WORKSPACE_OFFLINE_REFRESH, () => serviceManager.offlineWorkspaceProvider && serviceManager.offlineWorkspaceProvider.refresh());
+    const resetListErrors = () => require('./connections/ssh-connection.js').SSHConn.resetListErrors();
+    const refreshProvider = (provider, options) => {
+        if (!options || options.background !== true) resetListErrors();
+        if (provider) provider.refresh();
+    };
+    add(Command.REFRESH, () => { resetListErrors(); return API && API.refresh(); });
+    add(Command.ONLINE_REFRESH, options => refreshProvider(serviceManager.onlineProvider, options));
+    add(Command.OFFLINE_REFRESH, options => refreshProvider(serviceManager.offlineProvider, options));
+    add(Command.MANAGER_REFRESH, options => refreshProvider(serviceManager.managerProvider, options));
+    add(Command.WORKSPACE_ONLINE_REFRESH, options => refreshProvider(serviceManager.onlineWorkspaceProvider, options));
+    add(Command.WORKSPACE_OFFLINE_REFRESH, options => refreshProvider(serviceManager.offlineWorkspaceProvider, options));
     add(Command.AUTOICMP, () => API && API.auto_verify());
     add('sshtools2.group.list', () => GroupAPI && GroupAPI.show_groups_list());
     add(Command.GROUPS_LIST, () => GroupAPI && GroupAPI.show_groups_list());

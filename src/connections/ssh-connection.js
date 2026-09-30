@@ -33,6 +33,13 @@ class SSH {
 }
 exports.SSH = SSH;
 class SSHConn {
+    static listErrorKey(info, remotePath) {
+        return `${info.id}:${String(remotePath || "/").replace(/\/+$/, "") || "/"}`;
+    }
+    static resetListErrors(info = null) {
+        if (!info) { this.listErrors.clear(); return; }
+        for (const key of this.listErrors.keys()) if (key.startsWith(`${info.id}:`)) this.listErrors.delete(key);
+    }
     static cacheKey(sshInfo, remotePath) {
         return `${sshInfo.id}:${remotePath || "/"}`;
     }
@@ -125,6 +132,7 @@ class SSHConn {
             if (this.activeConn[key] === connection) delete this.activeConn[key];
             if (this.pending.get(key) === record) this.pending.delete(key);
             this.clearListCache(sshInfo);
+            this.resetListErrors(sshInfo);
         };
         record.promise = new Promise((resolve, reject) => {
             record.reject = reject;
@@ -152,6 +160,7 @@ class SSHConn {
         return Promise.resolve(this.activeConn[forwardOption ? forwardOption.fid : sshInfo.id] || { client: null, sftp: null });
     }
     static closeKey(key) {
+        this.resetListErrors({ id: key });
         const pending = this.pending.get(key);
         this.pending.delete(key);
         const active = this.activeConn[key];
@@ -168,6 +177,7 @@ class SSHConn {
     static closeAll() {
         for (const key of new Set([...Object.keys(this.activeConn), ...this.pending.keys()])) this.closeKey(key);
         this.listCache = {};
+        this.resetListErrors();
     }
     static async operation(info, method, args, fallback) {
         let timer;
@@ -185,7 +195,18 @@ class SSHConn {
                 }, 10000); }),
             ]);
         } catch (error) {
-            Console.warn(require("../utils/remote-operation-error.js").formatRemoteOperationError("SFTP", method, args, error), true);
+            const message = require("../utils/remote-operation-error.js").formatRemoteOperationError("SFTP", method, args, error);
+            const deniedListing = method === "readdir" && (error.code === 3 || error.code === "EACCES" || error.code === "EPERM" ||
+                /permission denied|operation not permitted/i.test(error.message || ""));
+            const key = this.listErrorKey(info, args[0]);
+            const fingerprint = `${error.code}:${error.message}`;
+            if (method === "readdir" && !deniedListing) this.listErrors.delete(key);
+            // Tree refreshes retry unreadable folders. Notify once for an unchanged
+            // denial, without caching failed results or granting browse privileges.
+            if (!deniedListing || this.listErrors.get(key) !== fingerprint) {
+                if (deniedListing) this.listErrors.set(key, fingerprint);
+                Console.warn(message, true);
+            }
             return fallback;
         } finally { clearTimeout(timer); }
     }
@@ -193,7 +214,10 @@ class SSHConn {
         const cached = this.getCachedList(info, remotePath);
         if (cached) return cached;
         const list = await this.operation(info, "readdir", [remotePath], null);
-        if (list) this.setCachedList(info, remotePath, list);
+        if (list) {
+            this.listErrors.delete(this.listErrorKey(info, remotePath));
+            this.setCachedList(info, remotePath, list);
+        }
         return this.cloneList(list);
     }
     static async mutate(info, method, args) {
@@ -232,5 +256,6 @@ class SSHConn {
 exports.SSHConn = SSHConn;
 SSHConn.activeConn = {};
 SSHConn.pending = new Map();
+SSHConn.listErrors = new Map();
 SSHConn.listCache = {};
 SSHConn.listCacheTTL = 15000;

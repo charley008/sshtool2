@@ -57,11 +57,32 @@ class RemoteFileService {
                     const hash = await this.hash(snapshot);
                     if (hash === current.hash) return true;
                     const stat = await fs.stat(snapshot);
-                    const success = await TransferService.run(kind, saved, snapshot, current.remote, true,
-                        Localize("sshtool.msg.api.file.save.title", current.remote), stat.size);
+                    let success, usedSudo = false;
+                    try {
+                        success = await TransferService.run(kind, saved, snapshot, current.remote, true,
+                            Localize("sshtool.msg.api.file.save.title", current.remote), stat.size, { throwOnError: kind === "ssh" });
+                    } catch (error) {
+                        if (kind !== "ssh" || !error.remoteWriteDenied) { Console.err(error); return false; }
+                        const { SudoSaveService } = require("./sudo-save-service.js");
+                        if (!await SudoSaveService.isLinux(saved)) { Console.err(error); return false; }
+                        const button = Localize("sshtool.msg.sudo.save.button");
+                        const choice = await vscode.window.showWarningMessage(
+                            Localize("sshtool.msg.sudo.save.prompt", current.remote), button, Localize("sshtool.msg.sudo.save.cancel"));
+                        if (choice !== button) return false;
+                        usedSudo = true;
+                        // Authorization and password live only in this queued save, never
+                        // in connection state or the metadata shared by other editors.
+                        success = await vscode.window.withProgress({
+                            location: vscode.ProgressLocation.Notification,
+                            title: Localize("sshtool.msg.api.file.save.title", current.remote), cancellable: false,
+                        }, () => SudoSaveService.save(saved, snapshot, current.remote));
+                    }
                     if (success) {
                         Storage.touch_temp_file_remote(local, { [kind]: saved, hash });
                         require("../api/core-api.js").API.refresh();
+                        // Announce completion only after the progress task resolves;
+                        // notification dismissal must never hold the save queue open.
+                        if (usedSudo) vscode.window.setStatusBarMessage(Localize("sshtool.msg.sudo.save.success", current.remote), 3000);
                     }
                     return success;
                 } finally { await fs.remove(snapshot); }

@@ -92,6 +92,12 @@ console.log("ssh credential helper tests passed");
     assert.strictEqual(hydrated.ssh.privateKey, "PRIVATE");
     assert.strictEqual(hydrated.ssh.passphrase, "phrase");
 
+    values.set("sshtools:ssh:ssh-1:password", "saved-sudo-password");
+    const mixed = { id: "ssh-1", ssh: { password: "", privateKey: "PRIVATE" } };
+    assert.strictEqual(await SSHCredentialService.getLoginPassword(mixed), "saved-sudo-password");
+    assert.strictEqual(await SSHCredentialService.getLoginPassword({ id: "ssh-1", ssh: { password: "inline-password" } }), "inline-password");
+    assert.strictEqual(await SSHCredentialService.getLoginPassword({ id: "other", ssh: { passphrase: "key-only" } }), undefined);
+
     await SSHCredentialService.deleteMany(["ssh-1"]);
     assert.strictEqual(values.has("sshtools:ssh:ssh-1:privateKey"), false);
     assert.strictEqual(values.has("sshtools:ssh:ssh-1:passphrase"), false);
